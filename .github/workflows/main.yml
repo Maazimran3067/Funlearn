@@ -59,7 +59,7 @@ jobs:
       - name: Trigger Render Hook
         run: curl -X POST "${{ secrets.RENDER_DEPLOY_HOOK }}"
 
- # ── JOB 4: Deploy Frontend (Vercel) ──────────────────────────
+# ── JOB 4: Deploy Frontend (Vercel) ──────────────────────────
   deploy-frontend:
     name: Deploy to Vercel
     needs: docker-build
@@ -73,8 +73,12 @@ jobs:
 
       - name: Vercel Deploy
         run: |
-          # Hum direct 'frontend' folder ke raste se deploy kar rahe hain
-          vercel deploy --prod --yes --token=${{ secrets.VERCEL_TOKEN }} --scope ${{ secrets.VERCEL_ORG_ID }} ./frontend
-        env:
-          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
-          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+          cd frontend
+          # 1. Pehle project ko forcefully link karo IDs ke sath
+          vercel link --yes --token=${{ secrets.VERCEL_TOKEN }} --project ${{ secrets.VERCEL_PROJECT_ID }} --scope ${{ secrets.VERCEL_ORG_ID }}
+          
+          # 2. Phir production environment settings pull karo
+          vercel pull --yes --environment=production --token=${{ secrets.VERCEL_TOKEN }}
+          
+          # 3. Final Deployment
+          vercel deploy --prod --yes --token=${{ secrets.VERCEL_TOKEN }}
