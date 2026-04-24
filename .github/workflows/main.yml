@@ -73,5 +73,8 @@ jobs:
 
       - name: Vercel Deploy
         run: |
-          # Hum direct folder specify kar rahe hain taake koi confusion na ho
+          # Hum direct 'frontend' folder ke raste se deploy kar rahe hain
           vercel deploy --prod --yes --token=${{ secrets.VERCEL_TOKEN }} --scope ${{ secrets.VERCEL_ORG_ID }} ./frontend
+        env:
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
