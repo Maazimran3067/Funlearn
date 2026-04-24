@@ -1,0 +1,39 @@
+
+
+# Services = the different parts of our app that run together
+services:
+
+  # ── Our Django Backend ──────────────────────────────────────
+  backend:
+    build:
+      context: ./backend        # Use the Dockerfile in backend folder
+      dockerfile: Dockerfile
+    container_name: funlearn_backend
+    restart: unless-stopped     # Restart automatically if it crashes
+    ports:
+      - "8000:8000"             # Your computer port 8000 = container port 8000
+    env_file:
+      - ./backend/.env          # Load all variables from .env file
+    volumes:
+      - ./backend:/app          # Your code folder linked to container
+    networks:
+      - funlearn_network        # Both services on same network so they can talk
+
+  # ── Our React Frontend ──────────────────────────────────────
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: funlearn_frontend
+    restart: unless-stopped
+    ports:
+      - "3000:80"               # Your port 3000 = container's nginx port 80
+    depends_on:
+      - backend                 # Start backend first, then frontend
+    networks:
+      - funlearn_network
+
+# ── Network — lets backend and frontend talk to each other ────
+networks:
+  funlearn_network:
+    driver: bridge
