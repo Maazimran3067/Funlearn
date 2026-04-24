@@ -1,0 +1,51 @@
+/* index.css - Global styles for FunLearn AI */
+
+/* Import a fun, rounded font perfect for kids */
+@import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap');
+
+/* Reset and base styles */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+/* Our color palette — fun and bright! */
+:root {
+  --purple:     #7C3AED;
+  --purple-light: #EDE9FE;
+  --pink:       #EC4899;
+  --pink-light: #FCE7F3;
+  --yellow:     #F59E0B;
+  --yellow-light: #FEF3C7;
+  --green:      #10B981;
+  --green-light: #D1FAE5;
+  --blue:       #3B82F6;
+  --blue-light: #DBEAFE;
+  --orange:     #F97316;
+  --orange-light: #FFEDD5;
+  --red:        #EF4444;
+  --bg:         #F9F5FF;
+  --white:      #FFFFFF;
+  --text-dark:  #1F1F2E;
+  --text-mid:   #4B5563;
+  --radius-sm:  10px;
+  --radius-md:  16px;
+  --radius-lg:  24px;
+  --radius-xl:  32px;
+}
+
+body {
+  font-family: 'Nunito', sans-serif;
+  background-color: var(--bg);
+  color: var(--text-dark);
+  min-height: 100vh;
+}
+
+/* Nice scrollbar */
+::-webkit-scrollbar { width: 8px; }
+::-webkit-scrollbar-track { background: var(--purple-light); }
+::-webkit-scrollbar-thumb { background: var(--purple); border-radius: 10px; }
+
+button { cursor: pointer; font-family: 'Nunito', sans-serif; }
+input  { font-family: 'Nunito', sans-serif; }
