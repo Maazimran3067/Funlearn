@@ -59,7 +59,7 @@ jobs:
       - name: Trigger Render Hook
         run: curl -X POST "${{ secrets.RENDER_DEPLOY_HOOK }}"
 
-  # ── JOB 4: Deploy Frontend (Vercel) ──────────────────────────
+ # ── JOB 4: Deploy Frontend (Vercel) ──────────────────────────
   deploy-frontend:
     name: Deploy to Vercel
     needs: docker-build
@@ -67,12 +67,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
+
       - name: Install Vercel CLI
         run: npm install -g vercel
+
       - name: Vercel Deploy
         run: |
           cd frontend
-          vercel --token=${{ secrets.VERCEL_TOKEN }} --prod --yes
-        env:
-          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
-          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+          # Force link using secrets and deploy to production
+          vercel deploy --prod --yes --token=${{ secrets.VERCEL_TOKEN }} --org ${{ secrets.VERCEL_ORG_ID }} --project ${{ secrets.VERCEL_PROJECT_ID }}
