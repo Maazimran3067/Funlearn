@@ -73,5 +73,5 @@ jobs:
 
       - name: Vercel Deploy
         run: |
-          cd frontend
-          vercel deploy --prod --yes --token=${{ secrets.VERCEL_TOKEN }} --name funlearn --scope ${{ secrets.VERCEL_ORG_ID }}
+          # Hum direct folder specify kar rahe hain taake koi confusion na ho
+          vercel deploy --prod --yes --token=${{ secrets.VERCEL_TOKEN }} --scope ${{ secrets.VERCEL_ORG_ID }} ./frontend
