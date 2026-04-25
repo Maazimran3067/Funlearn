@@ -2,6 +2,8 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.response import Response
 from django.contrib.auth import get_user_model, authenticate
+from django.core.mail import send_mail
+from django.conf import settings
 from .models import (
     get_db,
     create_student_profile,
@@ -22,7 +24,7 @@ import string
 User = get_user_model()
 
 
-# ── REGISTER ──────────────────────────────────────────────────────────────────
+# ── REGISTER ──────────────────────────────────────────────────────
 
 @api_view(['POST'])
 @permission_classes([AllowAny])
@@ -68,77 +70,195 @@ def register_view(request):
     return Response(serializer.errors, status=400)
 
 
-# ── LOGIN — THE CRITICAL FIX ──────────────────────────────────────────────────
+# ── SEND OTP ──────────────────────────────────────────────────────
+
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def send_otp_view(request):
+    """
+    Send a 6-digit verification code to email.
+    Used by teacher, parent, and admin registration.
+    Students do not need OTP.
+    """
+    email = request.data.get('email', '').strip().lower()
+    role  = request.data.get('role',  '').strip()
+
+    if not email:
+        return Response({'error': 'Email is required.'}, status=400)
+
+    if role not in ['teacher', 'parent', 'admin']:
+        return Response(
+            {'error': 'OTP is only for teacher, parent and admin registration.'},
+            status=400
+        )
+
+    # Check this email is not already registered
+    if User.objects.filter(email__iexact=email).exists():
+        return Response(
+            {'error': 'This email is already registered. Please login instead.'},
+            status=400
+        )
+
+    # Generate 6-digit code
+    otp_code = str(random.randint(100000, 999999))
+
+    # Save to MongoDB — delete old ones first
+    db = get_db()
+    db.otp_codes.delete_many({'email': email, 'role': role})
+    db.otp_codes.insert_one({
+        'email':      email,
+        'role':       role,
+        'code':       otp_code,
+        'verified':   False,
+        'created_at': datetime.utcnow(),
+    })
+
+    # Send email
+    try:
+        send_mail(
+            subject    = 'FunLearn AI — Your Verification Code',
+            message    = f"""Hello!
+
+Your FunLearn AI email verification code is:
+
+{otp_code}
+
+Enter this code to complete your registration.
+This code expires in 10 minutes.
+
+Do not share this code with anyone.
+
+If you did not request this, please ignore this email.
+
+FunLearn AI Team
+""",
+            from_email     = settings.EMAIL_HOST_USER,
+            recipient_list  = [email],
+            fail_silently   = False,
+        )
+        return Response({
+            'message': f'Verification code sent to {email}. Please check your inbox and spam folder.'
+        })
+
+    except Exception as e:
+        return Response(
+            {'error': f'Could not send email. Error: {str(e)}'},
+            status=500
+        )
+
+
+# ── VERIFY OTP ────────────────────────────────────────────────────
+
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def verify_otp_view(request):
+    """Check if OTP code is correct before showing full registration form."""
+    email    = request.data.get('email',    '').strip().lower()
+    role     = request.data.get('role',     '').strip()
+    otp_code = request.data.get('otp_code', '').strip()
+
+    if not email or not role or not otp_code:
+        return Response({'error': 'Email, role and otp_code are all required.'}, status=400)
+
+    db  = get_db()
+    otp = db.otp_codes.find_one({'email': email, 'role': role})
+
+    if not otp:
+        return Response(
+            {'error': 'Code not found. Please request a new verification code.'},
+            status=400
+        )
+
+    if str(otp.get('code', '')) != str(otp_code):
+        return Response(
+            {'error': 'Wrong code. Please check your email and try again.'},
+            status=400
+        )
+
+    return Response({'message': 'Code verified successfully! Please complete your registration.'})
+
+
+# ── LOGIN ─────────────────────────────────────────────────────────
 
 @api_view(['POST'])
 @permission_classes([AllowAny])
 def login_view(request):
     """
-    Login using email + password.
-    Django's authenticate() needs username internally,
-    so we look up the username from email first.
+    Students login with username.
+    Teachers, Parents, Admins login with email.
     """
-    email    = request.data.get('email', '').strip().lower()
+    email    = request.data.get('email',    '').strip().lower()
+    username = request.data.get('username', '').strip()
     password = request.data.get('password', '').strip()
-    role     = request.data.get('role', '').strip()
+    role     = request.data.get('role',     '').strip()
 
-    if not email or not password:
+    if not password:
+        return Response({'error': 'Password is required.'}, status=400)
+
+    # Find user
+    user_obj = None
+
+    if username:
+        # Student login by username
+        try:
+            user_obj = User.objects.get(username__iexact=username)
+        except User.DoesNotExist:
+            return Response(
+                {'error': 'No account found with this username. Please check and try again.'},
+                status=400
+            )
+    elif email:
+        # Teacher/Parent/Admin login by email
+        try:
+            user_obj = User.objects.get(email__iexact=email)
+        except User.DoesNotExist:
+            return Response(
+                {'error': 'No account found with this email. Please check and try again.'},
+                status=400
+            )
+    else:
         return Response(
-            {'error': 'Email and password are required.'},
+            {'error': 'Please provide your username or email.'},
             status=400
         )
 
-    # Step 1: Find user by email
-    try:
-        user_obj = User.objects.get(email__iexact=email)
-    except User.DoesNotExist:
-        return Response(
-            {'error': 'No account found with this email!'},
-            status=400
-        )
-    except User.MultipleObjectsReturned:
-        # If somehow duplicate emails, get the first active one
-        user_obj = User.objects.filter(email__iexact=email, is_active=True).first()
-        if not user_obj:
-            return Response({'error': 'Account error. Contact admin.'}, status=400)
-
-    # Step 2: Check if account is active
+    # Check account is active
     if not user_obj.is_active:
         return Response(
             {'error': 'Your account has been deactivated. Please contact the admin.'},
             status=403
         )
 
-    # Step 3: Authenticate with username (Django uses username internally)
+    # Authenticate password
     authenticated_user = authenticate(
         request,
-        username=user_obj.username,
-        password=password
+        username = user_obj.username,
+        password = password
     )
 
-    if authenticated_user is None:
+    if not authenticated_user:
         return Response(
-            {'error': 'Wrong password! Please try again.'},
+            {'error': 'Wrong password. Please try again.'},
             status=400
         )
 
-    # Step 4: Check role matches
+    # Check role
     if role and authenticated_user.role != role:
         return Response(
             {
                 'error': (
-                    f'This account is registered as "{authenticated_user.role}", '
-                    f'not "{role}". Please select the correct role!'
+                    f'This account is a "{authenticated_user.role}" account, '
+                    f'not "{role}". Please select the correct role.'
                 )
             },
             status=400
         )
 
-    # Step 5: Generate JWT tokens
+    # Generate JWT tokens
     from rest_framework_simplejwt.tokens import RefreshToken
     refresh = RefreshToken.for_user(authenticated_user)
 
-    # Step 6: Get MongoDB profile
+    # Get MongoDB profile
     db      = get_db()
     profile = {}
 
@@ -147,31 +267,21 @@ def login_view(request):
             {'user_id': str(authenticated_user.id)}, {'_id': 0}
         )
         if raw:
-            # Normalise age group before sending to frontend
             age = raw.get('age_group', '6-9')
-            if age in ('3-5',):
-                age = '3-6'
-            elif age in ('6-8',):
-                age = '6-9'
-            raw['age_group'] = age
+            raw['age_group'] = {'3-5': '3-6', '6-8': '6-9'}.get(age, age)
             profile = raw
 
     elif authenticated_user.role == 'teacher':
-        raw = db.teacher_profiles.find_one(
+        profile = db.teacher_profiles.find_one(
             {'user_id': str(authenticated_user.id)}, {'_id': 0}
-        )
-        profile = raw or {}
+        ) or {}
 
     elif authenticated_user.role == 'parent':
-        raw = db.parent_profiles.find_one(
+        profile = db.parent_profiles.find_one(
             {'user_id': str(authenticated_user.id)}, {'_id': 0}
-        )
-        profile = raw or {}
+        ) or {}
 
-    elif authenticated_user.role == 'admin':
-        profile = {}
-
-    # Convert datetime fields to strings
+    # Convert datetime fields
     for key, val in list(profile.items()):
         if hasattr(val, 'isoformat'):
             profile[key] = val.isoformat()
@@ -191,7 +301,7 @@ def login_view(request):
     })
 
 
-# ── PROFILE ───────────────────────────────────────────────────────────────────
+# ── PROFILE ───────────────────────────────────────────────────────
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
@@ -204,18 +314,16 @@ def profile_view(request):
         raw = db.student_profiles.find_one({'user_id': str(user.id)}, {'_id': 0})
         if raw:
             age = raw.get('age_group', '6-9')
-            if age in ('3-5',):
-                age = '3-6'
-            elif age in ('6-8',):
-                age = '6-9'
-            raw['age_group'] = age
+            raw['age_group'] = {'3-5': '3-6', '6-8': '6-9'}.get(age, age)
             profile = raw
-
     elif user.role == 'teacher':
-        profile = db.teacher_profiles.find_one({'user_id': str(user.id)}, {'_id': 0}) or {}
-
+        profile = db.teacher_profiles.find_one(
+            {'user_id': str(user.id)}, {'_id': 0}
+        ) or {}
     elif user.role == 'parent':
-        profile = db.parent_profiles.find_one({'user_id': str(user.id)}, {'_id': 0}) or {}
+        profile = db.parent_profiles.find_one(
+            {'user_id': str(user.id)}, {'_id': 0}
+        ) or {}
 
     for key, val in list(profile.items()):
         if hasattr(val, 'isoformat'):
@@ -259,7 +367,7 @@ def change_password_view(request):
     return Response({'message': 'Password changed successfully!'})
 
 
-# ── CLASS ─────────────────────────────────────────────────────────────────────
+# ── CLASS ─────────────────────────────────────────────────────────
 
 @api_view(['GET'])
 @permission_classes([AllowAny])
@@ -372,16 +480,14 @@ def class_detail_view(request, class_code):
                 ).limit(50)
             )
             avg = (
-                round(sum(min(100, s.get('percentage', 0)) for s in scores) / len(scores), 1)
+                round(
+                    sum(min(100, s.get('percentage', 0)) for s in scores) / len(scores),
+                    1
+                )
                 if scores else 0
             )
-
-            # Normalise age group
             age = profile.get('age_group', '6-9')
-            if age in ('3-5',):
-                age = '3-6'
-            elif age in ('6-8',):
-                age = '6-9'
+            age = {'3-5': '3-6', '6-8': '6-9'}.get(age, age)
 
             students.append({
                 'user_id':       sid,
@@ -435,7 +541,10 @@ def student_detail_view(request):
         game_avgs[gid].append(s['percentage'])
 
     game_averages = {g: round(sum(v) / len(v)) for g, v in game_avgs.items()}
-    overall_avg   = round(sum(s['percentage'] for s in scores) / len(scores)) if scores else 0
+    overall_avg   = (
+        round(sum(s['percentage'] for s in scores) / len(scores))
+        if scores else 0
+    )
 
     for key, val in list(profile.items()):
         if hasattr(val, 'isoformat'):
@@ -455,7 +564,7 @@ def student_detail_view(request):
     })
 
 
-# ── PARENT ────────────────────────────────────────────────────────────────────
+# ── PARENT ────────────────────────────────────────────────────────
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
@@ -464,7 +573,9 @@ def my_children_view(request):
         return Response({'error': 'Parents only.'}, status=400)
 
     db     = get_db()
-    parent = db.parent_profiles.find_one({'user_id': str(request.user.id)}, {'_id': 0})
+    parent = db.parent_profiles.find_one(
+        {'user_id': str(request.user.id)}, {'_id': 0}
+    )
     if not parent:
         return Response({'children': []})
 
@@ -489,13 +600,8 @@ def my_children_view(request):
                 if 'played_at' in s and hasattr(s['played_at'], 'isoformat'):
                     s['played_at'] = s['played_at'].isoformat()
 
-            # Normalise age group
             age = profile.get('age_group', '6-9')
-            if age in ('3-5',):
-                age = '3-6'
-            elif age in ('6-8',):
-                age = '6-9'
-            profile['age_group']  = age
+            profile['age_group']  = {'3-5': '3-6', '6-8': '6-9'}.get(age, age)
             profile['user_id']    = sid
             profile['first_name'] = child.first_name
             profile['last_name']  = child.last_name
@@ -515,7 +621,7 @@ def my_children_view(request):
     return Response({'children': children})
 
 
-# ── ADMIN ─────────────────────────────────────────────────────────────────────
+# ── ADMIN ─────────────────────────────────────────────────────────
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
@@ -529,18 +635,20 @@ def all_users_view(request):
     for u in User.objects.all().order_by('-date_joined'):
         profile = {}
         if u.role == 'student':
-            raw = db.student_profiles.find_one({'user_id': str(u.id)}, {'_id': 0}) or {}
+            raw = db.student_profiles.find_one(
+                {'user_id': str(u.id)}, {'_id': 0}
+            ) or {}
             age = raw.get('age_group', '6-9')
-            if age in ('3-5',):
-                age = '3-6'
-            elif age in ('6-8',):
-                age = '6-9'
-            raw['age_group'] = age
+            raw['age_group'] = {'3-5': '3-6', '6-8': '6-9'}.get(age, age)
             profile = raw
         elif u.role == 'teacher':
-            profile = db.teacher_profiles.find_one({'user_id': str(u.id)}, {'_id': 0}) or {}
+            profile = db.teacher_profiles.find_one(
+                {'user_id': str(u.id)}, {'_id': 0}
+            ) or {}
         elif u.role == 'parent':
-            profile = db.parent_profiles.find_one({'user_id': str(u.id)}, {'_id': 0}) or {}
+            profile = db.parent_profiles.find_one(
+                {'user_id': str(u.id)}, {'_id': 0}
+            ) or {}
 
         for key, val in list(profile.items()):
             if hasattr(val, 'isoformat'):
@@ -665,41 +773,3 @@ def platform_stats_view(request):
         'total_classes':  total_classes,
         'today_scores':   today_scores,
     })
-@api_view(['POST'])
-@permission_classes([IsAuthenticated])
-def add_child_view(request):
-    # The entire function body must be indented
-    if request.user.role != 'parent':
-        return Response({'error': 'Parents only.'}, status=400)
-
-    child_username = request.data.get('child_username', '').strip()
-    if not child_username:
-        return Response({'error': 'child_username is required.'}, status=400)
-
-    # Check student exists
-    try:
-        child = User.objects.get(username=child_username, role='student')
-    except User.DoesNotExist:
-        return Response({'error': f'No student found with username "{child_username}". Make sure they registered first.'}, status=404)
-
-    db = get_db()
-    parent = db.parent_profiles.find_one({'user_id': str(request.user.id)})
-
-    if not parent:
-        return Response({'error': 'Parent profile not found.'}, status=404)
-
-    # Check if child already linked
-    existing = parent.get('children', [])
-    if isinstance(existing, str):
-        existing = [existing]
-
-    if child_username in existing:
-        return Response({'error': 'This child is already linked to your account!'}, status=400)
-
-    # Add child to parent's children list
-    db.parent_profiles.update_one(
-        {'user_id': str(request.user.id)},
-        {'$addToSet': {'children': child_username}}
-    )
-
-    return Response({'message': f'{child_username} added successfully!'})

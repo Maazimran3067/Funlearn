@@ -11,6 +11,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # ── Security (DevOps: .env se values aa rahi hain) ──────────────────
 SECRET_KEY = os.getenv('DJANGO_SECRET_KEY', 'django-insecure-fallback-key')
 DEBUG = os.getenv('DJANGO_DEBUG', 'True') == 'True'
+# ALLOWED_HOSTS ko split kar rahe hain taake multiple hosts support hon
 ALLOWED_HOSTS = os.getenv('DJANGO_ALLOWED_HOSTS', '*').split(',')
 
 # ── Apps ──────────────────────────────────────────────────────────
@@ -22,7 +23,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'rest_framework',
-    'rest_framework_simplejwt', # Claude ki di hui requirements ke mutabiq
+    'rest_framework_simplejwt',
     'corsheaders',
     'users',
     'games',
@@ -70,13 +71,13 @@ DATABASES = {
 }
 
 # ── MongoDB Atlas (DevOps: .env se connection uthayega) ────────────
-MONGODB_URI = os.getenv('MONGODB_URI')
+MONGODB_URI = os.getenv('MONGODB_URI', 'mongodb://localhost:27017/')
 MONGODB_DB_NAME = os.getenv('MONGODB_DB_NAME', 'funlearn_db')
 
 # ── CORS SETTINGS ─────────────────────────────────────────────────
 CORS_ALLOWED_ORIGINS = os.getenv(
     'CORS_ALLOWED_ORIGINS', 
-    'http://localhost:3000'
+    'http://localhost:3000,http://127.0.0.1:3000'
 ).split(',')
 CORS_ALLOW_CREDENTIALS = True
 
@@ -92,13 +93,14 @@ REST_FRAMEWORK = {
 
 # ── JWT SETTINGS ──────────────────────────────────────────────────
 SIMPLE_JWT = {
-    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=int(os.getenv('JWT_ACCESS_TOKEN_LIFETIME_MINUTES', '1440'))), # Default 1 day
+    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=int(os.getenv('JWT_ACCESS_TOKEN_LIFETIME_MINUTES', '1440'))),
     'REFRESH_TOKEN_LIFETIME': timedelta(days=int(os.getenv('JWT_REFRESH_TOKEN_LIFETIME_DAYS', '7'))),
     'ROTATE_REFRESH_TOKENS': True,
     'AUTH_HEADER_TYPES': ('Bearer',),
 }
 
 # ── Custom User Model ─────────────────────────────────────────────
+# IMPORTANT: Check karein ke aapka model 'User' hai ya 'CustomUser'
 AUTH_USER_MODEL = 'users.User'
 
 AUTH_PASSWORD_VALIDATORS = [
@@ -114,3 +116,15 @@ STATIC_URL = 'static/'
 STATIC_ROOT = BASE_DIR / 'staticfiles'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+# ── Email Settings for OTP Verification ──────────────────────────
+EMAIL_BACKEND       = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST          = 'smtp.gmail.com'
+EMAIL_PORT          = 587
+EMAIL_USE_TLS       = True
+EMAIL_HOST_USER     = os.getenv('EMAIL_HOST_USER', '')
+EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD', '')
+DEFAULT_FROM_EMAIL  = os.getenv('EMAIL_HOST_USER', 'noreply@funlearn.ai')
+
+# ── Admin Secret Key ──────────────────────────────────────────────
+ADMIN_SECRET_KEY = os.getenv('ADMIN_SECRET_KEY', 'FunLearnAdmin123')

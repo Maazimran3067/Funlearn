@@ -7,7 +7,6 @@ export function AuthProvider({ children }) {
   const [user,    setUser]    = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // On app start — restore user from localStorage
   useEffect(() => {
     try {
       const stored = localStorage.getItem('funlearn_user');
@@ -24,20 +23,29 @@ export function AuthProvider({ children }) {
     }
   }, []);
 
-  const login = async (email, password, role) => {
-    const res  = await loginUser({ email, password, role });
-    const data = res.data;
+  const login = async (emailOrNull, password, role, usernameOrNull = null) => {
+    const payload = {};
 
-    // Save tokens
+    if (usernameOrNull) {
+      // Student — login with username
+      payload.username = usernameOrNull;
+    } else {
+      // Teacher, Parent, Admin — login with email
+      payload.email = emailOrNull;
+    }
+
+    payload.password = password;
+    payload.role     = role;
+
+    const res      = await loginUser(payload);
+    const data     = res.data;
+
     localStorage.setItem('access_token',  data.access);
     localStorage.setItem('refresh_token', data.refresh);
+    localStorage.setItem('funlearn_user', JSON.stringify(data.user));
 
-    // Save user object
-    const userData = data.user;
-    localStorage.setItem('funlearn_user', JSON.stringify(userData));
-    setUser(userData);
-
-    return userData;
+    setUser(data.user);
+    return data.user;
   };
 
   const logout = () => {
