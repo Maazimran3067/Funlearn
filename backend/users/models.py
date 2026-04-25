@@ -40,8 +40,6 @@ def generate_class_code(first_name):
     suffix = ''.join(random.choices(string.ascii_uppercase + string.digits, k=4))
     return f'{prefix}-{suffix}'
 
-
-
 def create_student_profile(user, age_group, class_code=''):
     db = get_db()
     profile = {
