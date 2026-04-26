@@ -11,9 +11,7 @@ export function AuthProvider({ children }) {
     try {
       const stored = localStorage.getItem('funlearn_user');
       const token  = localStorage.getItem('access_token');
-      if (stored && token) {
-        setUser(JSON.parse(stored));
-      }
+      if (stored && token) setUser(JSON.parse(stored));
     } catch {
       localStorage.removeItem('funlearn_user');
       localStorage.removeItem('access_token');
@@ -24,26 +22,20 @@ export function AuthProvider({ children }) {
   }, []);
 
   const login = async (emailOrNull, password, role, usernameOrNull = null) => {
-    const payload = {};
+    const payload = { password, role };
 
     if (usernameOrNull) {
-      // Student — login with username
       payload.username = usernameOrNull;
     } else {
-      // Teacher, Parent, Admin — login with email
       payload.email = emailOrNull;
     }
 
-    payload.password = password;
-    payload.role     = role;
-
-    const res      = await loginUser(payload);
-    const data     = res.data;
+    const res  = await loginUser(payload);
+    const data = res.data;
 
     localStorage.setItem('access_token',  data.access);
     localStorage.setItem('refresh_token', data.refresh);
     localStorage.setItem('funlearn_user', JSON.stringify(data.user));
-
     setUser(data.user);
     return data.user;
   };

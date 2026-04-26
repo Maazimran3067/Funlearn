@@ -12,44 +12,33 @@ from .models import (
 
 User = get_user_model()
 
+
 def validate_password_strength(password):
-    """
-    Password rules:
-    - Kam az kam 8 characters
-    - Kam az kam ek number (0-9)
-    - Kam az kam ek special character (!@#$%^ etc.)
-    """
     if len(password) < 8:
-        raise serializers.ValidationError(
-            'Password must be at least 8 characters long.'
-        )
+        raise serializers.ValidationError('Password must be at least 8 characters long.')
     if not re.search(r'[0-9]', password):
-        raise serializers.ValidationError(
-            'Password must contain at least one number (0-9).'
-        )
+        raise serializers.ValidationError('Password must contain at least one number.')
     if not re.search(r'[!@#$%^&*(),.?":{}|<>\-_=+]', password):
-        raise serializers.ValidationError(
-            'Password must contain at least one special character (!@#$%^&*).'
-        )
+        raise serializers.ValidationError('Password must contain at least one special character like ! @ # $ %')
     return password
 
+
 def verify_otp_code(email, role, otp_code):
-    """MongoDB se OTP check karne ke liye logic"""
     db  = get_db()
     otp = db.otp_codes.find_one({'email': email.lower(), 'role': role})
     if not otp:
         return 'Verification code not found. Please request a new one.'
     if str(otp.get('code', '')) != str(otp_code).strip():
         return 'Wrong verification code. Please try again.'
-    
-    # OTP sahi hai, toh verify mark kar do
     db.otp_codes.update_one(
         {'email': email.lower(), 'role': role},
         {'$set': {'verified': True}}
     )
     return None
 
-# ── STUDENT SERIALIZER ───────────────────────────────────────────
+
+# ── STUDENT — username only, NO email ────────────────────────────
+
 class StudentRegisterSerializer(serializers.Serializer):
     username         = serializers.CharField(max_length=50)
     password         = serializers.CharField(min_length=8, write_only=True)
@@ -64,9 +53,9 @@ class StudentRegisterSerializer(serializers.Serializer):
         if len(value) < 3:
             raise serializers.ValidationError('Username must be at least 3 characters.')
         if not re.match(r'^[a-zA-Z0-9_]+$', value):
-            raise serializers.ValidationError('Username can only have letters, numbers and underscores.')
+            raise serializers.ValidationError('Username can only have letters, numbers and underscores. No spaces.')
         if User.objects.filter(username__iexact=value).exists():
-            raise serializers.ValidationError('This username is already taken.')
+            raise serializers.ValidationError('This username is already taken. Please choose another.')
         return value
 
     def validate_password(self, value):
@@ -79,9 +68,8 @@ class StudentRegisterSerializer(serializers.Serializer):
 
     def create(self, validated_data):
         validated_data.pop('confirm_password')
-        # Student ke liye fake email taake Django database khush rahe
-        fake_email = f"{validated_data['username'].lower()}@student.funlearn.internal"
-
+        # Students have no real email — create internal fake one
+        fake_email = f"{validated_data['username'].lower()}_{User.objects.count()}@student.funlearn.internal"
         user = User.objects.create_user(
             email      = fake_email,
             username   = validated_data['username'],
@@ -97,7 +85,9 @@ class StudentRegisterSerializer(serializers.Serializer):
         )
         return user
 
-# ── TEACHER SERIALIZER ───────────────────────────────────────────
+
+# ── TEACHER — email + OTP ────────────────────────────────────────
+
 class TeacherRegisterSerializer(serializers.Serializer):
     email            = serializers.EmailField()
     username         = serializers.CharField(max_length=50)
@@ -111,7 +101,15 @@ class TeacherRegisterSerializer(serializers.Serializer):
     def validate_email(self, value):
         value = value.strip().lower()
         if User.objects.filter(email__iexact=value).exists():
-            raise serializers.ValidationError('Email already registered.')
+            raise serializers.ValidationError('This email is already registered. Please login instead.')
+        return value
+
+    def validate_username(self, value):
+        value = value.strip()
+        if User.objects.filter(username__iexact=value).exists():
+            raise serializers.ValidationError('This username is already taken.')
+        if not re.match(r'^[a-zA-Z0-9_]+$', value):
+            raise serializers.ValidationError('Username can only have letters, numbers and underscores.')
         return value
 
     def validate_password(self, value):
@@ -139,7 +137,9 @@ class TeacherRegisterSerializer(serializers.Serializer):
         create_teacher_profile(user=user, school_name=validated_data['school_name'])
         return user
 
-# ── PARENT SERIALIZER ────────────────────────────────────────────
+
+# ── PARENT — email + OTP ─────────────────────────────────────────
+
 class ParentRegisterSerializer(serializers.Serializer):
     email            = serializers.EmailField()
     username         = serializers.CharField(max_length=50)
@@ -150,12 +150,26 @@ class ParentRegisterSerializer(serializers.Serializer):
     child_username   = serializers.CharField(max_length=50)
     otp_code         = serializers.CharField(max_length=6)
 
+    def validate_email(self, value):
+        value = value.strip().lower()
+        if User.objects.filter(email__iexact=value).exists():
+            raise serializers.ValidationError('This email is already registered. Please login instead.')
+        return value
+
+    def validate_username(self, value):
+        value = value.strip()
+        if User.objects.filter(username__iexact=value).exists():
+            raise serializers.ValidationError('This username is already taken.')
+        return value
+
     def validate_password(self, value):
         return validate_password_strength(value)
 
     def validate_child_username(self, value):
         if not User.objects.filter(username__iexact=value, role='student').exists():
-            raise serializers.ValidationError('Child username not found.')
+            raise serializers.ValidationError(
+                'Child username not found. Make sure your child registered first as a student.'
+            )
         return value
 
     def validate(self, data):
@@ -180,7 +194,9 @@ class ParentRegisterSerializer(serializers.Serializer):
         create_parent_profile(user=user, child_username=validated_data['child_username'])
         return user
 
-# ── ADMIN SERIALIZER ─────────────────────────────────────────────
+
+# ── ADMIN — email + OTP + secret key ─────────────────────────────
+
 class AdminRegisterSerializer(serializers.Serializer):
     email            = serializers.EmailField()
     username         = serializers.CharField(max_length=50)
@@ -191,9 +207,26 @@ class AdminRegisterSerializer(serializers.Serializer):
     admin_secret_key = serializers.CharField(max_length=100)
     otp_code         = serializers.CharField(max_length=6)
 
+    def validate_email(self, value):
+        value = value.strip().lower()
+        if User.objects.filter(email__iexact=value).exists():
+            raise serializers.ValidationError('This email is already registered.')
+        return value
+
+    def validate_username(self, value):
+        value = value.strip()
+        if User.objects.filter(username__iexact=value).exists():
+            raise serializers.ValidationError('This username is already taken.')
+        return value
+
+    def validate_password(self, value):
+        return validate_password_strength(value)
+
     def validate_admin_secret_key(self, value):
         if value.strip() != settings.ADMIN_SECRET_KEY:
-            raise serializers.ValidationError('Invalid admin secret key.')
+            raise serializers.ValidationError(
+                'Invalid admin secret key. Contact the system administrator.'
+            )
         return value
 
     def validate(self, data):
@@ -219,8 +252,9 @@ class AdminRegisterSerializer(serializers.Serializer):
         create_admin_profile(user=user)
         return user
 
+
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
-        model = User
-        fields = ['id', 'email', 'username', 'role', 'first_name', 'last_name', 'date_joined']
+        model            = User
+        fields           = ['id', 'email', 'username', 'role', 'first_name', 'last_name', 'date_joined']
         read_only_fields = fields
