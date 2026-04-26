@@ -41,7 +41,6 @@ MIDDLEWARE = [
 ROOT_URLCONF     = 'kidlearn.urls'
 WSGI_APPLICATION = 'kidlearn.wsgi.application'
 
-# IMPORTANT: Must match your model class name exactly
 AUTH_USER_MODEL = 'users.User'
 
 TEMPLATES = [{
