@@ -1,66 +1,66 @@
 import axios from 'axios';
 
-// 1. Configuration: Defaults to local dev if environment variable is missing
-const BASE_URL = process.env.REACT_APP_API_URL || 'http://127.0.0.1:8000/api';
+// 1. Configuration: Render URL (without /api at the end)
+const BASE_URL = 'https://funlearn-o3b9.onrender.com';
 
 const api = axios.create({
   baseURL: BASE_URL,
   headers: { 'Content-Type': 'application/json' },
 });
 
-// 2. Authentication Interceptor: Automatically attaches JWT token to every request
+// 2. Authentication Interceptor: JWT token attach karne ke liye
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem('access_token');
   if (token) config.headers.Authorization = `Bearer ${token}`;
   return config;
 });
 
-// ── USER & AUTH ENDPOINTS ──────────────────────────────────────
-export const registerUser   = (data) => api.post('/users/register/', data);
-export const loginUser      = (data) => api.post('/users/login/', data);
-export const getProfile     = ()     => api.get('/users/profile/');
-export const updateProfile  = (data) => api.patch('/users/update-profile/', data);
-export const changePassword = (data) => api.post('/users/change-password/', data);
+// ── USER & AUTH ENDPOINTS (Added /api/ prefix to match backend) ──────────
+export const registerUser   = (data) => api.post('/api/users/register/', data);
+export const loginUser      = (data) => api.post('/api/users/login/', data);
+export const getProfile     = ()     => api.get('/api/users/profile/');
+export const updateProfile  = (data) => api.patch('/api/users/update-profile/', data);
+export const changePassword = (data) => api.post('/api/users/change-password/', data);
 
-// OTP System (Teacher/Parent/Admin verification)
-export const sendOTP   = (data) => api.post('/users/send-otp/',   data);
-export const verifyOTP = (data) => api.post('/users/verify-otp/', data);
+// OTP System
+export const sendOTP   = (data) => api.post('/api/users/send-otp/',   data);
+export const verifyOTP = (data) => api.post('/api/users/verify-otp/', data);
 
 // ── CLASSROOM MANAGEMENT ───────────────────────────────────────
-export const checkClassCode    = (code) => api.get(`/users/check-class-code/?code=${code}`);
-export const joinClass         = (data) => api.post('/users/join-class/', data);
-export const createClass       = (data) => api.post('/users/create-class/', data);
-export const getTeacherClasses = ()     => api.get('/users/my-classes/');
-export const getClassDetail    = (code) => api.get(`/users/class-detail/${code}/`);
-export const getStudentDetail  = (sid)  => api.get(`/users/student-detail/?student_id=${sid}`);
+export const checkClassCode    = (code) => api.get(`/api/users/check-class-code/?code=${code}`);
+export const joinClass         = (data) => api.post('/api/users/join-class/', data);
+export const createClass       = (data) => api.post('/api/users/create-class/', data);
+export const getTeacherClasses = ()     => api.get('/api/users/my-classes/');
+export const getClassDetail    = (code) => api.get(`/api/users/class-detail/${code}/`);
+export const getStudentDetail  = (sid)  => api.get(`/api/users/student-detail/?student_id=${sid}`);
 
 // Parent-specific
-export const getMyChildren = () => api.get('/users/my-children/');
+export const getMyChildren = () => api.get('/api/users/my-children/');
 
 // ── GAMEPLAY & GAMIFICATION ───────────────────────────────────
-export const getGames          = ()             => api.get('/games/');
-export const submitScore       = (data)         => api.post('/games/submit-score/', data);
-export const getMyScores       = ()             => api.get('/games/my-scores/');
-export const getStageProgress  = (gameId)       => api.get(`/games/stage-progress/?game_id=${gameId}`);
-export const saveStageProgress = (gameId, stgs) => api.post('/games/save-stage/', { game_id: gameId, unlocked_stages: stgs });
+export const getGames          = ()             => api.get('/api/games/');
+export const submitScore       = (data)         => api.post('/api/games/submit-score/', data);
+export const getMyScores       = ()             => api.get('/api/games/my-scores/');
+export const getStageProgress  = (gameId)       => api.get(`/api/games/stage-progress/?game_id=${gameId}`);
+export const saveStageProgress = (gameId, stgs) => api.post('/api/games/save-stage/', { game_id: gameId, unlocked_stages: stgs });
 
-export const getMyBadges    = () => api.get('/gamification/my-badges/');
-export const getLeaderboard = () => api.get('/gamification/leaderboard/');
+export const getMyBadges    = () => api.get('/api/gamification/my-badges/');
+export const getLeaderboard = () => api.get('/api/gamification/leaderboard/');
 
 // ── AI ENGINE ──────────────────────────────────────────────────
-export const getGameFeedback   = (data)   => api.post('/ai/game-feedback/', data);
-export const getAIDifficulty   = (gameId) => api.get(`/ai/difficulty/?game_id=${gameId}`);
-export const trainAIModel      = ()       => api.post('/ai/train-model/', {});
-export const getProgressReport = (sid)    => api.get(`/ai/progress-report/?student_id=${sid}`);
+export const getGameFeedback   = (data)   => api.post('/api/ai/game-feedback/', data);
+export const getAIDifficulty   = (gameId) => api.get(`/api/ai/difficulty/?game_id=${gameId}`);
+export const trainAIModel      = ()       => api.post('/api/ai/train-model/', {});
+export const getProgressReport = (sid)    => api.get(`/api/ai/progress-report/?student_id=${sid}`);
 
 // ── ADMIN PANEL ────────────────────────────────────────────────
-export const getAllUsers      = ()     => api.get('/users/all-users/');
-export const getAllClasses     = ()     => api.get('/users/all-classes/');
-export const toggleUser       = (data) => api.post('/users/toggle-user/', data);
-export const toggleClass      = (data) => api.post('/users/toggle-class/', data);
-export const getPlatformStats = ()     => api.get('/users/platform-stats/');
-export const getAllGamesAdmin  = ()     => api.get('/games/all/');
-export const toggleGame       = (data) => api.post('/games/toggle/', data);
-export const getActiveToday   = (code) => api.get(`/games/active-today/?class_code=${code}`);
+export const getAllUsers      = ()     => api.get('/api/users/all-users/');
+export const getAllClasses     = ()     => api.get('/api/users/all-classes/');
+export const toggleUser       = (data) => api.post('/api/users/toggle-user/', data);
+export const toggleClass      = (data) => api.post('/api/users/toggle-class/', data);
+export const getPlatformStats = ()     => api.get('/api/users/platform-stats/');
+export const getAllGamesAdmin  = ()     => api.get('/api/games/all/');
+export const toggleGame       = (data) => api.post('/api/games/toggle/', data);
+export const getActiveToday   = (code) => api.get(`/api/games/active-today/?class_code=${code}`);
 
 export default api;
