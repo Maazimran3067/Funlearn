@@ -1,4 +1,5 @@
 import os
+import djongo
 from pathlib import Path
 from datetime import timedelta
 from dotenv import load_dotenv
@@ -59,13 +60,17 @@ TEMPLATES = [{
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME':   BASE_DIR / 'db.sqlite3',
+        'ENGINE': 'djongo',
+        'NAME': os.getenv('MONGODB_DB_NAME', 'funlearn'),
+        'ENFORCE_SCHEMA': False,
+        'CLIENT': {
+            'host': os.getenv('MONGODB_URI', 'mongodb://localhost:27017/'),
+        }
     }
 }
 
 MONGODB_URI     = os.getenv('MONGODB_URI',     'mongodb://localhost:27017/')
-MONGODB_DB_NAME = os.getenv('MONGODB_DB_NAME', 'funlearn_db')
+MONGODB_DB_NAME = os.getenv('MONGODB_DB_NAME', 'funlearn')
 
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
