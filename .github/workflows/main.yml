@@ -74,12 +74,11 @@ jobs:
       - name: Vercel Deploy
         run: |
           cd frontend
-          # 1. Link the project (Current directory '.' use karein)
+          # 1. Link the project
           vercel link --yes --token=${{ secrets.VERCEL_TOKEN }} --project ${{ secrets.VERCEL_PROJECT_ID }} --scope ${{ secrets.VERCEL_ORG_ID }}
           
           # 2. Pull settings
           vercel pull --yes --environment=production --token=${{ secrets.VERCEL_TOKEN }}
           
-          # 3. Build & Deploy (Yahan --cwd . lazmi hai)
-          vercel build --prod --token=${{ secrets.VERCEL_TOKEN }}
-          vercel deploy --prebuilt --prod --yes --token=${{ secrets.VERCEL_TOKEN }}
+          # 3. Final Deployment from the current 'frontend' directory
+          vercel deploy --prod --yes --token=${{ secrets.VERCEL_TOKEN }}
