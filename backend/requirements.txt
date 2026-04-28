@@ -1,5 +1,5 @@
 django==4.2.7
-djongo
+django-antares-djongo
 pymongo[srv]==3.12.3
 djangorestframework
 djangorestframework-simplejwt
@@ -10,4 +10,3 @@ scikit-learn
 joblib
 numpy
 python-dotenv
-sqlparse==0.2.4
