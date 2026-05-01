@@ -3,6 +3,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../context/AuthContext';
 
+// ── ROLE CONFIG ────────────────────────────────────────────────
 const ROLES = [
   {
     id: 'student',
@@ -17,6 +18,7 @@ const ROLES = [
     placeholder: 'Your username',
     inputLabel: '🎮 Username',
     bg: 'linear-gradient(160deg, #F5F3FF 0%, #EDE9FE 50%, #DDD6FE 100%)',
+    cardBg: 'rgba(237,233,254,0.82)',
     floats: ['⭐','🎮','📚','🏆','🎯','✏️','🌟','🎪'],
   },
   {
@@ -32,6 +34,7 @@ const ROLES = [
     placeholder: 'your@email.com',
     inputLabel: '📧 Email Address',
     bg: 'linear-gradient(160deg, #ECFDF5 0%, #D1FAE5 50%, #A7F3D0 100%)',
+    cardBg: 'rgba(209,250,229,0.82)',
     floats: ['📖','🍎','✏️','📐','🎓','📝','🌿','💡'],
   },
   {
@@ -47,6 +50,7 @@ const ROLES = [
     placeholder: 'your@email.com',
     inputLabel: '📧 Email Address',
     bg: 'linear-gradient(160deg, #FFF7ED 0%, #FFEDD5 50%, #FED7AA 100%)',
+    cardBg: 'rgba(255,237,213,0.82)',
     floats: ['💝','🏠','👶','🌈','💫','🎀','🌸','💕'],
   },
   {
@@ -62,6 +66,7 @@ const ROLES = [
     placeholder: 'admin@email.com',
     inputLabel: '📧 Email Address',
     bg: 'linear-gradient(160deg, #FFF1F2 0%, #FEE2E2 50%, #FECACA 100%)',
+    cardBg: 'rgba(254,226,226,0.82)',
     floats: ['⚙️','🔒','🛡️','📊','🔑','💼','🖥️','📡'],
   },
 ];
@@ -151,7 +156,6 @@ export default function LoginPage() {
 
   const role = ROLES[roleIdx];
 
-  // Generate stable float positions once
   const [floatPositions] = useState(() =>
     Array.from({ length: 12 }, (_, i) => ({
       x: 5 + (i * 8.2) % 90,
@@ -225,16 +229,12 @@ export default function LoginPage() {
     >
       {/* ── ANIMATED BACKGROUND BLOBS ── */}
       <motion.div
-        style={{
-          position: 'absolute', inset: 0, pointerEvents: 'none', zIndex: 0,
-        }}
+        style={{ position: 'absolute', inset: 0, pointerEvents: 'none', zIndex: 0 }}
         animate={{ opacity: 1 }}
       >
         <motion.div
           style={{
-            position: 'absolute',
-            width: 500, height: 500,
-            borderRadius: '50%',
+            position: 'absolute', width: 500, height: 500, borderRadius: '50%',
             background: `radial-gradient(circle, ${role.glow} 0%, transparent 70%)`,
             top: -100, left: -100,
           }}
@@ -244,9 +244,7 @@ export default function LoginPage() {
         />
         <motion.div
           style={{
-            position: 'absolute',
-            width: 400, height: 400,
-            borderRadius: '50%',
+            position: 'absolute', width: 400, height: 400, borderRadius: '50%',
             background: `radial-gradient(circle, ${role.glow} 0%, transparent 70%)`,
             bottom: -80, right: -80,
           }}
@@ -256,9 +254,7 @@ export default function LoginPage() {
         />
         <motion.div
           style={{
-            position: 'absolute',
-            width: 250, height: 250,
-            borderRadius: '50%',
+            position: 'absolute', width: 250, height: 250, borderRadius: '50%',
             background: `radial-gradient(circle, ${role.glow} 0%, transparent 70%)`,
             top: '40%', right: '15%',
           }}
@@ -288,19 +284,31 @@ export default function LoginPage() {
 
       {/* ── MAIN CARD ── */}
       <motion.div
-        style={{ position: 'relative', zIndex: 10, width: '100%', maxWidth: 460 }}
-        animate={{ rotateY: flipping ? 90 : 0, scale: flipping ? 0.9 : 1 }}
-        transition={{ duration: 0.22, ease: 'easeIn' }}
+        style={{
+          position: 'relative',
+          zIndex: 10,
+          width: '100%',
+          maxWidth: 460,
+          perspective: 1000,
+        }}
+        animate={{
+          rotateY: flipping ? 90 : 0,
+          scale: flipping ? 0.9 : 1,
+        }}
+        transition={{
+          duration: 0.25,
+          ease: [0.4, 0, 0.2, 1],
+        }}
       >
         <motion.div
           style={{
-            background: 'rgba(255,255,255,0.92)',
+            background: role.cardBg,
             backdropFilter: 'blur(20px)',
             borderRadius: 32,
             padding: '36px 32px 32px',
             boxShadow: `0 8px 40px ${role.glow}, 0 2px 12px rgba(0,0,0,0.08), inset 0 1px 0 rgba(255,255,255,0.9)`,
             border: `2px solid rgba(255,255,255,0.8)`,
-            transition: 'box-shadow 0.5s ease',
+            transition: 'background 0.5s ease, box-shadow 0.5s ease',
           }}
           layout
         >
@@ -407,10 +415,7 @@ export default function LoginPage() {
             >
               <span style={{ fontSize: 26 }}>{role.emoji}</span>
               <div>
-                <div style={{
-                  fontSize: 14, fontWeight: 800, color: role.color,
-                  fontFamily: 'Nunito, sans-serif',
-                }}>
+                <div style={{ fontSize: 14, fontWeight: 800, color: role.color, fontFamily: 'Nunito, sans-serif' }}>
                   {role.label} Login
                 </div>
                 <div style={{ fontSize: 11, color: '#9CA3AF', fontFamily: 'Nunito, sans-serif' }}>
@@ -480,7 +485,7 @@ export default function LoginPage() {
                       border: `2px solid ${identifier ? role.color + '60' : '#E5E7EB'}`,
                       outline: 'none', boxSizing: 'border-box',
                       fontFamily: 'Nunito, sans-serif',
-                      background: identifier ? role.light + '60' : '#FAFAFA',
+                      background: identifier ? role.light + '60' : 'rgba(255,255,255,0.7)',
                       transition: 'border 0.2s, background 0.2s',
                       color: '#1F2937',
                     }}
@@ -513,7 +518,7 @@ export default function LoginPage() {
                     border: `2px solid ${password ? role.color + '60' : '#E5E7EB'}`,
                     outline: 'none', boxSizing: 'border-box',
                     fontFamily: 'Nunito, sans-serif',
-                    background: password ? role.light + '60' : '#FAFAFA',
+                    background: password ? role.light + '60' : 'rgba(255,255,255,0.7)',
                     transition: 'border 0.2s, background 0.2s',
                     color: '#1F2937',
                   }}
@@ -541,9 +546,7 @@ export default function LoginPage() {
               style={{
                 width: '100%', padding: '15px',
                 borderRadius: 16, border: 'none',
-                background: loading
-                  ? '#E5E7EB'
-                  : role.grad,
+                background: loading ? '#E5E7EB' : role.grad,
                 color: loading ? '#9CA3AF' : '#fff',
                 fontSize: 15, fontWeight: 900,
                 cursor: loading ? 'not-allowed' : 'pointer',
@@ -557,7 +560,6 @@ export default function LoginPage() {
               whileTap={!loading ? { scale: 0.97 } : {}}
               disabled={loading}
             >
-              {/* Shimmer effect on hover */}
               {!loading && (
                 <motion.div
                   style={{
