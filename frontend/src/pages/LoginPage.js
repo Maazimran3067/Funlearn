@@ -3,7 +3,6 @@ import { useNavigate, Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../context/AuthContext';
 
-// ── ROLE CONFIG ────────────────────────────────────────────────
 const ROLES = [
   {
     id: 'student',
