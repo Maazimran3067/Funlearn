@@ -7,11 +7,12 @@ import LoginPage    from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 import HomePage from './pages/HomePage';
 
+
 // Dashboards
-import StudentDashboard from './pages/StudentDashboard';
-import TeacherDashboard from './pages/TeacherDashboard';
-import ParentDashboard  from './pages/ParentDashboard';
-import AdminDashboard   from './pages/AdminDashboard';
+import StudentDashboard from './pages/student/StudentDashboard';
+import TeacherDashboard from './pages/teacher/TeacherDashboard';
+import ParentDashboard  from './pages/parent/ParentDashboard';
+import AdminDashboard   from './pages/admin/AdminDashboard';
 
 // Age 3-6 Games
 import ColorsGame    from './games/ColorsGame';
