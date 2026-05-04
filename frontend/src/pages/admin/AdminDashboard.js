@@ -8,7 +8,7 @@ import {
   ResponsiveContainer, PieChart, Pie, Cell, Legend
 } from 'recharts';
 import {
-  getProfile, getPlatformStats, getAllUsers, getAllGames,
+  getProfile, getPlatformStats, getAllUsers, getAllGamesAdmin,
   toggleUserActive, toggleGame, getAllClasses, trainAIModel
 } from '../../services/api';
 
@@ -239,7 +239,7 @@ export default function AdminDashboard() {
   const [filterRole, setFilterRole] = useState('all');
 
   useEffect(() => {
-    Promise.all([getPlatformStats(), getAllUsers(), getAllGames(), getAllClasses()])
+    Promise.all([getPlatformStats(), getAllUsers(), getAllGamesAdmin(), getAllClasses()])
       .then(([sR, uR, gR, cR]) => {
         setStats(sR.data);
         setUsers(uR.data.users || []);
