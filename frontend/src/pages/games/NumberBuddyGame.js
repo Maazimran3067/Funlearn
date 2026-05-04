@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../../context/AuthContext';
 import { submitScore } from '../../services/api';
-import useStageProgress from '../hooks/useStageProgress';
+import useStageProgress from '../../hooks/useStageProgress';
 
 const STAGES = [
   { stage:0, label:'Stage 1', count:[1,3],  pass:70 },

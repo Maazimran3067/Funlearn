@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { submitScore } from '../../services/api';
-import useStageProgress from '../hooks/useStageProgress';
+import useStageProgress from '../../hooks/useStageProgress';
 import { useAuth } from '../../context/AuthContext';
 
 /**
