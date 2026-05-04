@@ -91,7 +91,8 @@ export default function AlphabetGame() {
       for (let i = 0; i < results.length; i++) heard.push(results[i].transcript);
       setHeardText(heard[0]);
       setMicState('done');
-      // Check all alternatives — first match wins
+      
+      
       const matched = heard.some(h => matchesLetter(h, targetRef.current));
       processAnswer(matched);
     };
