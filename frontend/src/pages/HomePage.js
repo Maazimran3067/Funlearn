@@ -669,32 +669,37 @@ export default function HomePage() {
               </AnimatePresence>
 
               <form onSubmit={handleContact}>
-                {[
-                  { label: '👤 Your Name *', placeholder: 'Muhammad Ali', value: name, set: setName, type: 'text' },
-                  { label: '📧 Email Address *', placeholder: 'your@email.com', value: email, set: setEmail, type: 'email' },
-                ].map((f, i) => {
-                  const [focused, setFocused] = useState(false);
-                  return (
-                    <div key={i} style={{ marginBottom: 14 }}>
-                      <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: '#94A3B8',
-                        marginBottom: 6, fontFamily: 'Nunito,sans-serif', letterSpacing: '0.8px' }}>
-                        {f.label}
-                      </label>
-                      <input type={f.type} placeholder={f.placeholder} value={f.value}
-                        onChange={e => f.set(e.target.value)} required
-                        style={{
-                          width: '100%', padding: '12px 14px', borderRadius: 12, boxSizing: 'border-box',
-                          background: focused ? 'rgba(30,41,59,0.95)' : 'rgba(15,23,42,0.7)',
-                          border: `1px solid ${focused ? '#06B6D4' : '#2D3A4F'}`,
-                          color: '#F1F5F9', fontSize: 14, fontFamily: 'Nunito,sans-serif',
-                          outline: 'none', transition: 'all 0.2s',
-                          boxShadow: focused ? '0 0 0 3px rgba(6,182,212,0.12)' : 'none',
-                        }}
-                        onFocus={() => setFocused(true)} onBlur={() => setFocused(false)}/>
-                    </div>
-                  );
-                })}
+              <div style={{ marginBottom: 14 }}>
+                <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: '#94A3B8',
+                marginBottom: 6, fontFamily: 'Nunito,sans-serif', letterSpacing: '0.8px' }}>
+    👤 Your Name *
+  </label>
+  <input type="text" placeholder="Muhammad Ali" value={name}
+    onChange={e => setName(e.target.value)} required
+    style={{
+      width: '100%', padding: '12px 14px', borderRadius: 12, boxSizing: 'border-box',
+      background: 'rgba(15,23,42,0.7)', border: '1px solid #2D3A4F',
+      color: '#F1F5F9', fontSize: 14, fontFamily: 'Nunito,sans-serif', outline: 'none',
+    }}
+    onFocus={e => { e.target.style.borderColor = '#06B6D4'; e.target.style.boxShadow = '0 0 0 3px rgba(6,182,212,0.12)'; }}
+    onBlur={e => { e.target.style.borderColor = '#2D3A4F'; e.target.style.boxShadow = 'none'; }}/>
+</div>
 
+<div style={{ marginBottom: 14 }}>
+  <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: '#94A3B8',
+    marginBottom: 6, fontFamily: 'Nunito,sans-serif', letterSpacing: '0.8px' }}>
+    📧 Email Address *
+  </label>
+  <input type="email" placeholder="your@email.com" value={email}
+    onChange={e => setEmail(e.target.value)} required
+    style={{
+      width: '100%', padding: '12px 14px', borderRadius: 12, boxSizing: 'border-box',
+      background: 'rgba(15,23,42,0.7)', border: '1px solid #2D3A4F',
+      color: '#F1F5F9', fontSize: 14, fontFamily: 'Nunito,sans-serif', outline: 'none',
+    }}
+    onFocus={e => { e.target.style.borderColor = '#06B6D4'; e.target.style.boxShadow = '0 0 0 3px rgba(6,182,212,0.12)'; }}
+    onBlur={e => { e.target.style.borderColor = '#2D3A4F'; e.target.style.boxShadow = 'none'; }}/>
+</div>
                 <div style={{ marginBottom: 18 }}>
                   <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: '#94A3B8',
                     marginBottom: 6, fontFamily: 'Nunito,sans-serif', letterSpacing: '0.8px' }}>
