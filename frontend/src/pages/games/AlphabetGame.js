@@ -13,7 +13,6 @@ const STAGES = [
   { name:'Stage 5', letters:'VWXYZ'.split(''),  questions:5, passMark:70 },
 ];
 
-// Comprehensive phonetics — every way a child might say each letter
 const PHONETICS = {
   A:['a','ay','aye','hey','ei'],         B:['b','be','bee','bea','bi'],
   C:['c','see','sea','si','ce'],         D:['d','dee','de','di'],
