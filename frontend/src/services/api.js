@@ -63,4 +63,15 @@ export const getAllGamesAdmin  = ()     => api.get('/api/games/all/');
 export const toggleGame       = (data) => api.post('/api/games/toggle/', data);
 export const getActiveToday   = (code) => api.get(`/api/games/active-today/?class_code=${code}`);
 
-export const getChildProgress = (username) => api.get(`/api/users/child-progress/?username=` + username);`nexport const getAIProgressReport = (username) => api.get(`/api/ai/progress-report/?username=` + username);`nexport const addChild = (data) => api.post(`/api/users/add-child/`, data);`nexport const getStudentsInClass = (code) => api.get(`/api/users/class-detail/` + code + `/`);`nexport const getStudentDetailedProfile = (sid) => api.get(`/api/users/student-detail/?student_id=` + sid);`nexport const activeTodayStudents = (code) => api.get(`/api/games/active-today/?class_code=` + code);`nexport const createTeacherClass = (data) => api.post(`/api/users/create-class/`, data);`n`nexport default api;
+// ── PARENT ────────────────────────────────────────────────────
+export const getChildProgress          = (username) => api.get(`/api/users/child-progress/?username=${username}`);
+export const getAIProgressReport       = (username) => api.get(`/api/ai/progress-report/?username=${username}`);
+export const addChild                  = (data)     => api.post('/api/users/add-child/', data);
+
+// ── TEACHER ───────────────────────────────────────────────────
+export const getStudentsInClass        = (code)     => api.get(`/api/users/class-detail/${code}/`);
+export const getStudentDetailedProfile = (sid)      => api.get(`/api/users/student-detail/?student_id=${sid}`);
+export const activeTodayStudents       = (code)     => api.get(`/api/games/active-today/?class_code=${code}`);
+export const createTeacherClass        = (data)     => api.post('/api/users/create-class/', data);
+
+export default api;
