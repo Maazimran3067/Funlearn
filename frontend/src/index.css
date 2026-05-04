@@ -1,51 +1,301 @@
-/* index.css - Global styles for FunLearn AI */
+@import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800;900&display=swap');
 
-/* Import a fun, rounded font perfect for kids */
-@import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap');
-
-/* Reset and base styles */
-* {
+*, *::before, *::after {
+  box-sizing: border-box;
   margin: 0;
   padding: 0;
-  box-sizing: border-box;
 }
 
-/* Our color palette — fun and bright! */
-:root {
-  --purple:     #7C3AED;
-  --purple-light: #EDE9FE;
-  --pink:       #EC4899;
-  --pink-light: #FCE7F3;
-  --yellow:     #F59E0B;
-  --yellow-light: #FEF3C7;
-  --green:      #10B981;
-  --green-light: #D1FAE5;
-  --blue:       #3B82F6;
-  --blue-light: #DBEAFE;
-  --orange:     #F97316;
-  --orange-light: #FFEDD5;
-  --red:        #EF4444;
-  --bg:         #F9F5FF;
-  --white:      #FFFFFF;
-  --text-dark:  #1F1F2E;
-  --text-mid:   #4B5563;
-  --radius-sm:  10px;
-  --radius-md:  16px;
-  --radius-lg:  24px;
-  --radius-xl:  32px;
+html {
+  scroll-behavior: smooth;
 }
 
 body {
   font-family: 'Nunito', sans-serif;
-  background-color: var(--bg);
-  color: var(--text-dark);
-  min-height: 100vh;
+  background: #0B1120;
+  color: #F1F5F9;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  overflow-x: hidden;
 }
 
-/* Nice scrollbar */
-::-webkit-scrollbar { width: 8px; }
-::-webkit-scrollbar-track { background: var(--purple-light); }
-::-webkit-scrollbar-thumb { background: var(--purple); border-radius: 10px; }
+/* ── SCROLLBAR ─────────────────────────────────────── */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #0F172A;
+}
+::-webkit-scrollbar-thumb {
+  background: #2D3A4F;
+  border-radius: 10px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #3B4F6A;
+}
 
-button { cursor: pointer; font-family: 'Nunito', sans-serif; }
-input  { font-family: 'Nunito', sans-serif; }
+/* ── INPUT AUTOFILL DARK FIX ───────────────────────── */
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus,
+input:-webkit-autofill:active {
+  -webkit-text-fill-color: #F1F5F9 !important;
+  -webkit-box-shadow: 0 0 0px 1000px #0F172A inset !important;
+  transition: background-color 5000s ease-in-out 0s;
+  caret-color: #F1F5F9;
+}
+
+/* ── BUTTON RESET ──────────────────────────────────── */
+button {
+  font-family: 'Nunito', sans-serif;
+  cursor: pointer;
+}
+button:focus {
+  outline: none;
+}
+button:disabled {
+  cursor: not-allowed;
+}
+
+/* ── INPUT RESET ───────────────────────────────────── */
+input, textarea, select {
+  font-family: 'Nunito', sans-serif;
+}
+input:focus, textarea:focus, select:focus {
+  outline: none;
+}
+
+/* ── LINK RESET ────────────────────────────────────── */
+a {
+  text-decoration: none;
+  color: inherit;
+}
+
+/* ── GLOW ANIMATIONS ───────────────────────────────── */
+@keyframes glowPulseIndigo {
+  0%, 100% { box-shadow: 0 0 8px rgba(99,102,241,0.35); }
+  50%       { box-shadow: 0 0 22px rgba(99,102,241,0.75); }
+}
+@keyframes glowPulseGreen {
+  0%, 100% { box-shadow: 0 0 8px rgba(16,185,129,0.35); }
+  50%       { box-shadow: 0 0 22px rgba(16,185,129,0.75); }
+}
+@keyframes glowPulseAmber {
+  0%, 100% { box-shadow: 0 0 8px rgba(245,158,11,0.35); }
+  50%       { box-shadow: 0 0 22px rgba(245,158,11,0.75); }
+}
+@keyframes glowPulseRed {
+  0%, 100% { box-shadow: 0 0 8px rgba(239,68,68,0.35); }
+  50%       { box-shadow: 0 0 22px rgba(239,68,68,0.75); }
+}
+
+/* ── SPIN ANIMATION ────────────────────────────────── */
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+.spin {
+  animation: spin 0.8s linear infinite;
+  display: inline-block;
+}
+
+/* ── FADE IN ───────────────────────────────────────── */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.fade-in {
+  animation: fadeIn 0.3s ease-out forwards;
+}
+
+/* ── CARD HOVER GLOW UTILITIES ─────────────────────── */
+.glow-indigo:hover {
+  box-shadow: 0 8px 32px rgba(99,102,241,0.25), 0 2px 8px rgba(0,0,0,0.4);
+  border-color: rgba(99,102,241,0.4) !important;
+  transform: translateY(-2px);
+  transition: all 0.18s ease;
+}
+.glow-green:hover {
+  box-shadow: 0 8px 32px rgba(16,185,129,0.25), 0 2px 8px rgba(0,0,0,0.4);
+  border-color: rgba(16,185,129,0.4) !important;
+  transform: translateY(-2px);
+  transition: all 0.18s ease;
+}
+.glow-amber:hover {
+  box-shadow: 0 8px 32px rgba(245,158,11,0.25), 0 2px 8px rgba(0,0,0,0.4);
+  border-color: rgba(245,158,11,0.4) !important;
+  transform: translateY(-2px);
+  transition: all 0.18s ease;
+}
+
+/* ── GAME CARD ─────────────────────────────────────── */
+.game-card {
+  background: #1E293B;
+  border: 1px solid #2D3A4F;
+  border-radius: 16px;
+  padding: 20px;
+  transition: all 0.18s ease;
+  cursor: pointer;
+}
+.game-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 12px 36px rgba(0,0,0,0.35);
+}
+
+/* ── BUTTON GLOW ON HOVER ──────────────────────────── */
+.btn-glow-indigo {
+  transition: all 0.18s ease;
+}
+.btn-glow-indigo:hover:not(:disabled) {
+  box-shadow: 0 6px 22px rgba(99,102,241,0.55);
+  transform: translateY(-1px);
+}
+.btn-glow-green {
+  transition: all 0.18s ease;
+}
+.btn-glow-green:hover:not(:disabled) {
+  box-shadow: 0 6px 22px rgba(16,185,129,0.55);
+  transform: translateY(-1px);
+}
+.btn-glow-amber {
+  transition: all 0.18s ease;
+}
+.btn-glow-amber:hover:not(:disabled) {
+  box-shadow: 0 6px 22px rgba(245,158,11,0.55);
+  transform: translateY(-1px);
+}
+
+/* ── PROGRESS BAR ──────────────────────────────────── */
+.progress-track {
+  height: 6px;
+  background: #2D3A4F;
+  border-radius: 10px;
+  overflow: hidden;
+}
+.progress-fill {
+  height: 100%;
+  border-radius: 10px;
+  transition: width 0.6s ease;
+}
+
+/* ── BADGE PILL ────────────────────────────────────── */
+.badge-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 12px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+  font-family: 'Nunito', sans-serif;
+}
+
+/* ── DARK OVERLAY ──────────────────────────────────── */
+.dark-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.72);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 999;
+  padding: 20px;
+}
+
+/* ── MODAL CARD ────────────────────────────────────── */
+.modal-card {
+  background: #1E293B;
+  border: 1px solid #2D3A4F;
+  border-radius: 20px;
+  padding: 28px 24px;
+  width: 100%;
+  max-width: 420px;
+  box-shadow: 0 24px 60px rgba(0,0,0,0.6);
+}
+
+/* ── SIDEBAR WIDTH HELPER ──────────────────────────── */
+.with-sidebar {
+  margin-left: 220px;
+  margin-top: 60px;
+  padding: 28px;
+  min-height: calc(100vh - 60px);
+}
+
+/* ── LOADING SCREEN ────────────────────────────────── */
+.loading-screen {
+  min-height: 100vh;
+  background: #0B1120;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 14px;
+}
+.loading-screen p {
+  color: #64748B;
+  font-size: 15px;
+  font-family: 'Nunito', sans-serif;
+}
+
+/* ── GRID BACKGROUND ───────────────────────────────── */
+.grid-bg {
+  position: absolute;
+  inset: 0;
+  opacity: 0.03;
+  background-image:
+    linear-gradient(#4F6080 1px, transparent 1px),
+    linear-gradient(90deg, #4F6080 1px, transparent 1px);
+  background-size: 48px 48px;
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* ── STAT NUMBER ───────────────────────────────────── */
+.stat-number {
+  font-size: 28px;
+  font-weight: 900;
+  color: #F1F5F9;
+  font-family: 'Nunito', sans-serif;
+  line-height: 1;
+}
+
+/* ── TABLE STYLES ──────────────────────────────────── */
+.dark-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+.dark-table th {
+  font-size: 10px;
+  font-weight: 700;
+  color: #64748B;
+  letter-spacing: 0.5px;
+  padding: 8px 12px;
+  text-align: left;
+  border-bottom: 1px solid #2D3A4F;
+}
+.dark-table td {
+  padding: 12px;
+  font-size: 13px;
+  color: #F1F5F9;
+  font-family: 'Nunito', sans-serif;
+  border-bottom: 1px solid #1E2D45;
+}
+.dark-table tr:hover td {
+  background: rgba(30,41,59,0.5);
+}
+
+/* ── SCORE COLORS ──────────────────────────────────── */
+.score-high   { color: #10B981; }
+.score-medium { color: #F59E0B; }
+.score-low    { color: #EF4444; }
+
+/* ── ACTIVE DOT ────────────────────────────────────── */
+.active-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #10B981;
+  box-shadow: 0 0 6px #10B981;
+  display: inline-block;
+}

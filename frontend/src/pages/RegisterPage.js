@@ -1,419 +1,458 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { registerUser, sendOTP, verifyOTP } from '../services/api';
 
 const ROLES = [
-  { id:'student', emoji:'🎒', label:'Student',  desc:'I want to learn and play!',    color:'#7C3AED', light:'#EDE9FE' },
-  { id:'teacher', emoji:'👩‍🏫', label:'Teacher',  desc:'I teach a class',              color:'#10B981', light:'#D1FAE5' },
-  { id:'parent',  emoji:'👨‍👩‍👧', label:'Parent',   desc:"I track my child's progress", color:'#F97316', light:'#FFEDD5' },
-  { id:'admin',   emoji:'🔧', label:'Admin',    desc:'I manage the platform',        color:'#EF4444', light:'#FEE2E2' },
+  { id:'student', emoji:'🎒', label:'Student',  desc:'Play games & learn',  color:'#6366F1', glow:'rgba(99,102,241,0.2)',  border:'rgba(99,102,241,0.4)' },
+  { id:'teacher', emoji:'👩‍🏫', label:'Teacher',  desc:'Manage classes',     color:'#F59E0B', glow:'rgba(245,158,11,0.2)',  border:'rgba(245,158,11,0.4)' },
+  { id:'parent',  emoji:'👨‍👩‍👧', label:'Parent',   desc:'Track your child',   color:'#10B981', glow:'rgba(16,185,129,0.2)',  border:'rgba(16,185,129,0.4)' },
+  { id:'admin',   emoji:'🛡️', label:'Admin',    desc:'System admin',       color:'#EF4444', glow:'rgba(239,68,68,0.2)',   border:'rgba(239,68,68,0.4)'  },
 ];
-
-const AGE_GROUPS = [
-  { id:'3-6',  emoji:'🐣', label:'Age 3–6',  color:'#F97316', light:'#FFEDD5' },
-  { id:'6-9',  emoji:'🚀', label:'Age 6–9',  color:'#7C3AED', light:'#EDE9FE' },
-  { id:'9-12', emoji:'🧠', label:'Age 9–12', color:'#10B981', light:'#D1FAE5' },
+const AGE = [
+  { id:'3-6',  emoji:'🐣', label:'3–6',  color:'#F59E0B' },
+  { id:'6-9',  emoji:'🚀', label:'6–9',  color:'#6366F1' },
+  { id:'9-12', emoji:'🧠', label:'9–12', color:'#10B981' },
 ];
+const rgbOf = (c) => c==='#6366F1'?'99,102,241':c==='#10B981'?'16,185,129':c==='#F59E0B'?'245,158,11':'239,68,68';
 
-// Shows password strength bar
-function PasswordStrength({ password }) {
-  if (!password) return null;
-  const hasLength  = password.length >= 8;
-  const hasNumber  = /[0-9]/.test(password);
-  const hasSpecial = /[!@#$%^&*(),.?":{}|<>\-_=+]/.test(password);
-  const score      = [hasLength, hasNumber, hasSpecial].filter(Boolean).length;
-  const color      = score === 3 ? '#10B981' : score === 2 ? '#F59E0B' : '#EF4444';
-  const label      = score === 3 ? '✅ Strong' : score === 2 ? '⚠️ Medium' : '❌ Weak';
+function Inp({ label, type='text', placeholder, value, onChange, required, color, right }) {
+  const [f,setF] = useState(false);
   return (
-    <div style={{ marginTop:6 }}>
-      <div style={{ display:'flex', gap:4, marginBottom:3 }}>
-        {[1,2,3].map(i => (
-          <div key={i} style={{ flex:1, height:4, borderRadius:4, background: i <= score ? color : '#E5E7EB' }} />
-        ))}
+    <div style={{ marginBottom:14 }}>
+      {label && <label style={{ display:'block', fontSize:11, fontWeight:700, color:'#94A3B8',
+        marginBottom:7, fontFamily:'Nunito,sans-serif', letterSpacing:'0.8px' }}>{label}</label>}
+      <div style={{
+        background:f?'rgba(30,41,59,0.95)':'rgba(15,23,42,0.7)',
+        border:`1px solid ${f?color:'#2D3A4F'}`,
+        borderRadius:12, padding:'12px 14px',
+        boxShadow:f?`0 0 0 3px rgba(${rgbOf(color)},0.15)`:'none',
+        transition:'all 0.2s', display:'flex', alignItems:'center', gap:8 }}>
+        <input type={type} placeholder={placeholder} value={value}
+          onChange={onChange} required={required}
+          onFocus={()=>setF(true)} onBlur={()=>setF(false)}
+          style={{ flex:1, background:'transparent', border:'none', outline:'none',
+            color:'#F1F5F9', fontSize:14, fontFamily:'Nunito,sans-serif' }}/>
+        {right}
       </div>
-      <div style={{ fontSize:12, color, fontWeight:600 }}>{label}</div>
-      <div style={{ fontSize:11, color:'#9CA3AF' }}>
-        {!hasLength  && '• At least 8 characters  '}
-        {!hasNumber  && '• At least one number  '}
-        {!hasSpecial && '• At least one special character (!@#$...)'}
+    </div>
+  );
+}
+
+function PwStr({ pw }) {
+  if (!pw) return null;
+  const s = [pw.length>=8, /[0-9]/.test(pw), /[!@#$%^&*]/.test(pw)].filter(Boolean).length;
+  const c = s===3?'#10B981':s===2?'#F59E0B':'#EF4444';
+  const l = s===3?'Strong':s===2?'Medium':'Weak';
+  return (
+    <div style={{ marginTop:6, marginBottom:8 }}>
+      <div style={{ display:'flex', gap:4, marginBottom:4 }}>
+        {[1,2,3].map(i=><div key={i} style={{ flex:1, height:3, borderRadius:3,
+          background:i<=s?c:'#2D3A4F', transition:'background 0.3s' }}/>)}
       </div>
+      <span style={{ fontSize:11, color:c, fontFamily:'Nunito,sans-serif', fontWeight:700 }}>{l}</span>
     </div>
   );
 }
 
 export default function RegisterPage() {
   const navigate = useNavigate();
+  const [step,  setStep]  = useState(1);
+  const [ri,    setRi]    = useState(0);
+  const [load,  setLoad]  = useState(false);
+  const [err,   setErr]   = useState('');
+  const [ok,    setOk]    = useState('');
+  const [email, setEmail] = useState('');
+  const [otp,   setOtp]   = useState('');
+  const [sp,    setSp]    = useState(false);
+  const [sc,    setSc]    = useState(false);
+  const [form,  setForm]  = useState({ username:'', password:'', confirm_password:'',
+    first_name:'', last_name:'', age_group:'', class_code:'',
+    school_name:'', child_username:'', admin_secret_key:'' });
+  const role   = ROLES[ri];
+  const needOTP = ['teacher','parent','admin'].includes(role.id);
+  const set = f => e => { setForm(p=>({...p,[f]:e.target.value})); setErr(''); };
+  const switchRole = i => { setRi(i); setStep(1); setErr(''); setOk(''); setEmail(''); setOtp(''); };
 
-  // Steps:
-  // 1 = pick role
-  // 2 = enter email (teacher/parent/admin only)
-  // 3 = enter OTP code (teacher/parent/admin only)
-  // 4 = fill full form (all roles)
-  const [step,    setStep]    = useState(1);
-  const [role,    setRole]    = useState('');
-  const [loading, setLoading] = useState(false);
-  const [error,   setError]   = useState('');
-  const [success, setSuccess] = useState('');
-
-  const [otpEmail, setOtpEmail] = useState('');
-  const [otpCode,  setOtpCode]  = useState('');
-
-  const [form, setForm] = useState({
-    username:         '',
-    password:         '',
-    confirm_password: '',
-    first_name:       '',
-    last_name:        '',
-    age_group:        '',
-    class_code:       '',
-    school_name:      '',
-    child_username:   '',
-    admin_secret_key: '',
-  });
-
-  const currentRole = ROLES.find(r => r.id === role);
-  const needsOTP    = ['teacher', 'parent', 'admin'].includes(role);
-
-  const set = (field) => (e) => {
-    setForm(f => ({ ...f, [field]: e.target.value }));
-    setError('');
-  };
-
-  // ── SEND OTP ─────────────────────────────────────────────────
-  const handleSendOTP = async () => {
-    if (!otpEmail.trim()) { setError('Please enter your email.'); return; }
-    setLoading(true); setError(''); setSuccess('');
+  const sendCode = async () => {
+    if (!email.trim()) { setErr('Enter your email.'); return; }
+    setLoad(true); setErr(''); setOk('');
     try {
-      await sendOTP({ email: otpEmail.trim().toLowerCase(), role });
-      setSuccess(`Code sent to ${otpEmail}. Check your inbox and spam folder.`);
-      setStep(3);
-    } catch (err) {
-      setError(err.response?.data?.error || 'Could not send OTP. Please try again.');
-    } finally { setLoading(false); }
+      await sendOTP({ email:email.trim().toLowerCase(), role:role.id });
+      setOk(`Code sent to ${email}! Check inbox & spam.`); setStep(3);
+    } catch(e) { setErr(e.response?.data?.error||'Could not send OTP.'); }
+    finally { setLoad(false); }
   };
 
-  // ── VERIFY OTP ───────────────────────────────────────────────
-  const handleVerifyOTP = async () => {
-    if (otpCode.length !== 6) { setError('Please enter the full 6-digit code.'); return; }
-    setLoading(true); setError('');
+  const verifyCode = async () => {
+    if (otp.length!==6) { setErr('Enter full 6-digit code.'); return; }
+    setLoad(true); setErr('');
     try {
-      await verifyOTP({ email: otpEmail.trim().toLowerCase(), role, otp_code: otpCode.trim() });
-      setStep(4);
-      setSuccess('');
-    } catch (err) {
-      setError(err.response?.data?.error || 'Wrong code. Please try again.');
-    } finally { setLoading(false); }
+      await verifyOTP({ email:email.trim().toLowerCase(), role:role.id, otp_code:otp });
+      setStep(4); setOk(''); setErr('');
+    } catch(e) { setErr(e.response?.data?.error||'Wrong code.'); }
+    finally { setLoad(false); }
   };
 
-  // ── SUBMIT REGISTRATION ──────────────────────────────────────
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setLoading(true); setError('');
-
-    if (form.password !== form.confirm_password) {
-      setError('Passwords do not match.'); setLoading(false); return;
-    }
-
-    const data = { role, ...form };
-    if (needsOTP) {
-      data.email    = otpEmail.trim().toLowerCase();
-      data.otp_code = otpCode.trim();
-    }
-
+  const submit = async (e) => {
+    e.preventDefault(); setLoad(true); setErr('');
+    if (form.password!==form.confirm_password) { setErr('Passwords do not match.'); setLoad(false); return; }
+    const data = { role:role.id, ...form };
+    if (needOTP) { data.email=email.trim().toLowerCase(); data.otp_code=otp; }
     try {
       const res = await registerUser(data);
-      if (role === 'teacher' && res.data.class_code) {
-        setSuccess(`Account created! Your class code is: ${res.data.class_code} — Write this down! 📝`);
-      } else {
-        setSuccess('Account created! Redirecting to login...');
-      }
-      setTimeout(() => navigate('/login'), 3000);
-    } catch (err) {
-      const errors = err.response?.data;
-      if (errors && typeof errors === 'object') {
-        const firstKey = Object.keys(errors)[0];
-        const firstMsg = Array.isArray(errors[firstKey]) ? errors[firstKey][0] : errors[firstKey];
-        setError(String(firstMsg) || 'Something went wrong.');
-      } else {
-        setError('Cannot reach server. Make sure backend is running.');
-      }
-    } finally { setLoading(false); }
+      if (role.id==='teacher'&&res.data.class_code)
+        setOk(`Account created! Class code: ${res.data.class_code} — save it! 📝`);
+      else setOk('Account created! Redirecting...');
+      setTimeout(()=>navigate('/login'), 3000);
+    } catch(e) {
+      const errs=e.response?.data;
+      if (errs&&typeof errs==='object') {
+        const k=Object.keys(errs)[0];
+        setErr(String(Array.isArray(errs[k])?errs[k][0]:errs[k])||'Something went wrong.');
+      } else setErr('Server not responding.');
+    } finally { setLoad(false); }
   };
 
-  // ── STEP 1: Choose Role ───────────────────────────────────────
-  if (step === 1) {
-    return (
-      <div style={S.page}>
-        <motion.div style={S.card} initial={{ opacity:0, y:30 }} animate={{ opacity:1, y:0 }}>
-          <div style={{ textAlign:'center', marginBottom:24 }}>
-            <div style={{ fontSize:52 }}>🎓</div>
-            <h1 style={{ fontSize:22, fontWeight:900, color:'#7C3AED', margin:'8px 0 4px', fontFamily:'Nunito,sans-serif' }}>Join FunLearn AI</h1>
-            <p style={{ fontSize:14, color:'#6B7280' }}>Who are you? Pick your role!</p>
+  // Shared wrapper
+  const Wrap = ({ children }) => (
+    <div style={{ minHeight:'100vh', display:'flex', background:'#0B1120',
+      alignItems:'center', justifyContent:'center', padding:24, position:'relative', overflow:'hidden' }}>
+      <div style={{ position:'absolute', inset:0, opacity:0.03,
+        backgroundImage:'linear-gradient(#4F6080 1px,transparent 1px),linear-gradient(90deg,#4F6080 1px,transparent 1px)',
+        backgroundSize:'48px 48px', pointerEvents:'none' }}/>
+      <motion.div style={{ position:'absolute', width:600, height:600, borderRadius:'50%',
+        background:`radial-gradient(circle,rgba(${rgbOf(role.color)},0.1) 0%,transparent 70%)`,
+        top:-200, right:-100, pointerEvents:'none' }}
+        animate={{ scale:[1,1.1,1] }} transition={{ duration:9, repeat:Infinity }} key={role.id}/>
+      <motion.div style={{ width:'100%', maxWidth:480, background:'rgba(15,23,42,0.95)',
+        border:'1px solid #1E2D45', borderRadius:20, padding:'32px 28px',
+        backdropFilter:'blur(20px)',
+        boxShadow:`0 20px 60px rgba(0,0,0,0.5), 0 0 40px rgba(${rgbOf(role.color)},0.08)` }}
+        initial={{ opacity:0, y:20 }} animate={{ opacity:1, y:0 }} transition={{ duration:0.35 }}>
+        {/* Logo */}
+        <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:24 }}>
+          <div style={{ display:'flex', alignItems:'center', gap:10 }}>
+            <div style={{ width:36, height:36, borderRadius:10,
+              background:'linear-gradient(135deg,#6366F1,#8B5CF6)',
+              display:'flex', alignItems:'center', justifyContent:'center', fontSize:18 }}>🎓</div>
+            <span style={{ fontSize:18, fontWeight:900, fontFamily:'Nunito,sans-serif' }}>
+              <span style={{ color:'#6366F1' }}>Fun</span>
+              <span style={{ color:'#F59E0B' }}>Learn</span>
+              <span style={{ color:'#F1F5F9' }}>AI</span>
+            </span>
           </div>
-
-          <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:12, marginBottom:20 }}>
-            {ROLES.map(r => (
-              <motion.div key={r.id}
-                style={{ ...S.roleCard, border: role===r.id?`3px solid ${r.color}`:'3px solid transparent', background: role===r.id?r.light:'#F9FAFB' }}
-                whileHover={{ scale:1.04 }} whileTap={{ scale:0.97 }}
-                onClick={() => { setRole(r.id); setError(''); }}>
-                <div style={{ fontSize:34 }}>{r.emoji}</div>
-                <div style={{ fontSize:14, fontWeight:800, color: role===r.id?r.color:'#1F1F2E', marginTop:6 }}>{r.label}</div>
-                <div style={{ fontSize:11, color:'#6B7280', marginTop:3, textAlign:'center' }}>{r.desc}</div>
-              </motion.div>
-            ))}
-          </div>
-
-          {error && <div style={S.errorBox}>❌ {error}</div>}
-
-          <motion.button style={{ ...S.btn, opacity: role?1:0.4 }}
-            whileHover={role?{scale:1.03}:{}}
-            onClick={() => {
-              if (!role) { setError('Please select a role first.'); return; }
-              setStep(role === 'student' ? 4 : 2);
-            }}>
-            Next →
-          </motion.button>
-          <p style={S.switchText}>Already have an account? <Link to="/login" style={S.link}>Log in 🚀</Link></p>
-        </motion.div>
-      </div>
-    );
-  }
-
-  // ── STEP 2: Enter Email ───────────────────────────────────────
-  if (step === 2) {
-    return (
-      <div style={S.page}>
-        <motion.div style={S.card} initial={{ opacity:0, x:30 }} animate={{ opacity:1, x:0 }}>
-          <button style={S.backBtn} onClick={() => { setStep(1); setError(''); }}>← Back</button>
-          <div style={{ textAlign:'center', marginBottom:20 }}>
-            <div style={{ fontSize:40 }}>{currentRole?.emoji}</div>
-            <h2 style={{ fontSize:18, fontWeight:900, color:currentRole?.color, margin:'6px 0 4px', fontFamily:'Nunito,sans-serif' }}>
-              {currentRole?.label} Registration
-            </h2>
-            <p style={{ fontSize:13, color:'#6B7280' }}>Step 1 of 3 — Verify your email first</p>
-          </div>
-
-          {error   && <div style={S.errorBox}>❌ {error}</div>}
-          {success && <div style={S.successBox}>✅ {success}</div>}
-
-          <label style={S.label}>📧 Your Email Address *</label>
-          <input style={S.input} type="email" placeholder="your@email.com" value={otpEmail}
-            onChange={e => { setOtpEmail(e.target.value); setError(''); }} />
-
-          <motion.button
-            style={{ ...S.btn, background:`linear-gradient(135deg,${currentRole?.color},#EC4899)`, marginTop:14 }}
-            whileHover={{ scale:1.03 }} onClick={handleSendOTP} disabled={loading}>
-            {loading ? '⏳ Sending...' : '📧 Send Verification Code'}
-          </motion.button>
-        </motion.div>
-      </div>
-    );
-  }
-
-  // ── STEP 3: Enter OTP ─────────────────────────────────────────
-  if (step === 3) {
-    return (
-      <div style={S.page}>
-        <motion.div style={S.card} initial={{ opacity:0, x:30 }} animate={{ opacity:1, x:0 }}>
-          <button style={S.backBtn} onClick={() => { setStep(2); setError(''); setOtpCode(''); }}>← Back</button>
-          <div style={{ textAlign:'center', marginBottom:20 }}>
-            <div style={{ fontSize:40 }}>📬</div>
-            <h2 style={{ fontSize:18, fontWeight:900, color:currentRole?.color, margin:'6px 0 4px', fontFamily:'Nunito,sans-serif' }}>
-              Check Your Email
-            </h2>
-            <p style={{ fontSize:13, color:'#6B7280' }}>Step 2 of 3 — Enter the 6-digit code</p>
-          </div>
-
-          <div style={{ background:'#D1FAE5', borderRadius:12, padding:'12px', fontSize:13, color:'#065F46', fontWeight:600, marginBottom:16 }}>
-            ✅ Code sent to <strong>{otpEmail}</strong>
-          </div>
-
-          {success && <div style={S.successBox}>✅ {success}</div>}
-          {error   && <div style={S.errorBox}>❌ {error}</div>}
-
-          <label style={S.label}>🔢 6-Digit Code *</label>
-          <input
-            style={{ ...S.input, fontSize:26, textAlign:'center', letterSpacing:10, fontWeight:900 }}
-            type="text" maxLength={6} placeholder="000000"
-            value={otpCode}
-            onChange={e => { setOtpCode(e.target.value.replace(/\D/g, '')); setError(''); }} />
-
-          <motion.button
-            style={{ ...S.btn, background:`linear-gradient(135deg,${currentRole?.color},#EC4899)`, marginTop:14, opacity: otpCode.length===6?1:0.5 }}
-            whileHover={{ scale:1.03 }} onClick={handleVerifyOTP}
-            disabled={loading || otpCode.length !== 6}>
-            {loading ? '⏳ Verifying...' : '✅ Verify Code'}
-          </motion.button>
-
-          <motion.button
-            style={{ ...S.btn, background:'#F3F4F6', color:'#4B5563', marginTop:10 }}
-            whileHover={{ scale:1.03 }}
-            onClick={() => { setStep(2); setOtpCode(''); setError(''); setSuccess(''); }}>
-            Resend Code
-          </motion.button>
-        </motion.div>
-      </div>
-    );
-  }
-
-  // ── STEP 4: Full Form ─────────────────────────────────────────
-  return (
-    <div style={S.page}>
-      <motion.div style={S.card} initial={{ opacity:0, x:30 }} animate={{ opacity:1, x:0 }}>
-        <button style={S.backBtn} onClick={() => { setStep(needsOTP?3:1); setError(''); }}>← Back</button>
-
-        <div style={{ textAlign:'center', marginBottom:16 }}>
-          <span style={{ fontSize:30 }}>{currentRole?.emoji}</span>
-          <div style={{ fontSize:15, fontWeight:900, color:currentRole?.color, marginTop:4, fontFamily:'Nunito,sans-serif' }}>
-            {currentRole?.label} — Complete Registration
-          </div>
-          {needsOTP && <div style={{ fontSize:12, color:'#10B981', fontWeight:600, marginTop:4 }}>✅ Email verified: {otpEmail}</div>}
-          <div style={{ fontSize:12, color:'#6B7280', marginTop:2 }}>
-            {needsOTP ? 'Step 3 of 3' : 'Step 2 of 2'} — Fill your details
-          </div>
+          <Link to="/login" style={{ fontSize:12, color:'#64748B', fontFamily:'Nunito,sans-serif',
+            textDecoration:'none', display:'flex', alignItems:'center', gap:4 }}>
+            Sign in →
+          </Link>
         </div>
-
-        {success && <div style={S.successBox}>✅ {success}</div>}
-        {error   && <div style={S.errorBox}>❌ {error}</div>}
-
-        <form onSubmit={handleSubmit}>
-
-          {/* First + Last Name */}
-          <div style={{ display:'flex', gap:10, marginBottom:10 }}>
-            <div style={{ flex:1 }}>
-              <label style={S.label}>First Name *</label>
-              <input style={S.input} placeholder="Ali"  value={form.first_name} onChange={set('first_name')} required />
-            </div>
-            <div style={{ flex:1 }}>
-              <label style={S.label}>Last Name *</label>
-              <input style={S.input} placeholder="Khan" value={form.last_name}  onChange={set('last_name')}  required />
-            </div>
-          </div>
-
-          {/* Username */}
-          <div style={{ marginBottom:10 }}>
-            <label style={S.label}>
-              🎮 Username * {role==='student' && '— you will use this to log in'}
-            </label>
-            <input style={S.input} placeholder="letters, numbers, underscore only"
-              value={form.username} onChange={set('username')} required />
-          </div>
-
-          {/* Verified email — shown read only for non-students */}
-          {needsOTP && (
-            <div style={{ marginBottom:10 }}>
-              <label style={S.label}>📧 Email</label>
-              <input style={{ ...S.input, background:'#F0FDF4', color:'#065F46', fontWeight:700 }}
-                value={otpEmail} readOnly />
-              <div style={{ fontSize:11, color:'#10B981', marginTop:2 }}>✅ Verified</div>
-            </div>
-          )}
-
-          {/* Password */}
-          <div style={{ marginBottom:10 }}>
-            <label style={S.label}>🔒 Password *</label>
-            <input style={S.input} type="password" placeholder="Min 8 chars + number + special character"
-              value={form.password} onChange={set('password')} required />
-            <PasswordStrength password={form.password} />
-          </div>
-
-          {/* Confirm Password */}
-          <div style={{ marginBottom:10 }}>
-            <label style={S.label}>🔒 Confirm Password *</label>
-            <input
-              style={{ ...S.input, borderColor: form.confirm_password ? (form.password===form.confirm_password?'#10B981':'#EF4444') : '#EDE9FE' }}
-              type="password" placeholder="Repeat your password"
-              value={form.confirm_password} onChange={set('confirm_password')} required />
-            {form.confirm_password && form.password !== form.confirm_password &&
-              <div style={{ fontSize:12, color:'#EF4444', marginTop:3 }}>❌ Passwords do not match</div>}
-            {form.confirm_password && form.password === form.confirm_password &&
-              <div style={{ fontSize:12, color:'#10B981', marginTop:3 }}>✅ Passwords match</div>}
-          </div>
-
-          {/* Student specific */}
-          {role === 'student' && (
-            <>
-              <div style={{ marginBottom:10 }}>
-                <label style={S.label}>🎂 Age Group *</label>
-                <div style={{ display:'flex', gap:8 }}>
-                  {AGE_GROUPS.map(ag => (
-                    <motion.div key={ag.id}
-                      style={{ flex:1, borderRadius:12, padding:'10px 4px', textAlign:'center', cursor:'pointer',
-                        border:     form.age_group===ag.id?`3px solid ${ag.color}`:'3px solid #E5E7EB',
-                        background: form.age_group===ag.id?ag.light:'#fff' }}
-                      whileHover={{ scale:1.04 }}
-                      onClick={() => setForm(f => ({ ...f, age_group: ag.id }))}>
-                      <div style={{ fontSize:20 }}>{ag.emoji}</div>
-                      <div style={{ fontSize:12, fontWeight:800, color: form.age_group===ag.id?ag.color:'#1F1F2E' }}>{ag.id}</div>
-                    </motion.div>
-                  ))}
-                </div>
-                {!form.age_group && <div style={{ fontSize:11, color:'#EF4444', marginTop:4 }}>Please select an age group</div>}
-              </div>
-              <div style={{ marginBottom:10 }}>
-                <label style={S.label}>🏫 Class Code (optional)</label>
-                <input style={S.input} placeholder="Ask your teacher for the class code"
-                  value={form.class_code} onChange={set('class_code')} />
-              </div>
-            </>
-          )}
-
-          {/* Teacher specific */}
-          {role === 'teacher' && (
-            <div style={{ marginBottom:10 }}>
-              <label style={S.label}>🏛️ School Name *</label>
-              <input style={S.input} placeholder="e.g. City School Lahore"
-                value={form.school_name} onChange={set('school_name')} required />
-            </div>
-          )}
-
-          {/* Parent specific */}
-          {role === 'parent' && (
-            <div style={{ marginBottom:10 }}>
-              <label style={S.label}>👧 Child's Username *</label>
-              <input style={S.input} placeholder="Your child's exact username"
-                value={form.child_username} onChange={set('child_username')} required />
-              <div style={{ fontSize:11, color:'#6B7280', marginTop:3 }}>
-                Your child must have registered as a student first.
-              </div>
-            </div>
-          )}
-
-          {/* Admin specific */}
-          {role === 'admin' && (
-            <div style={{ marginBottom:10 }}>
-              <label style={S.label}>🔑 Admin Secret Key *</label>
-              <input style={S.input} type="password" placeholder="Contact admin for this key"
-                value={form.admin_secret_key} onChange={set('admin_secret_key')} required />
-            </div>
-          )}
-
-          <motion.button type="submit"
-            style={{ ...S.btn, background:`linear-gradient(135deg,${currentRole?.color},#EC4899)`, marginTop:14, opacity:loading?0.7:1 }}
-            whileHover={!loading?{scale:1.03}:{}}
-            disabled={loading || (role==='student' && !form.age_group)}>
-            {loading ? '✨ Creating account...' : `Create ${currentRole?.label} Account 🎉`}
-          </motion.button>
-        </form>
-
-        <p style={S.switchText}>Already have an account? <Link to="/login" style={S.link}>Log in 🚀</Link></p>
+        {children}
       </motion.div>
     </div>
   );
-}
 
-const S = {
-  page:       { minHeight:'100vh', display:'flex', alignItems:'center', justifyContent:'center', background:'linear-gradient(135deg,#F9F5FF,#FDF2F8,#F0FDF4)', padding:20 },
-  card:       { background:'#fff', borderRadius:28, padding:'32px 28px', width:'100%', maxWidth:500, boxShadow:'0 20px 60px rgba(124,58,237,0.12)' },
-  roleCard:   { borderRadius:16, padding:'14px 8px', display:'flex', flexDirection:'column', alignItems:'center', cursor:'pointer', transition:'all 0.2s' },
-  backBtn:    { background:'#F3F4F6', border:'none', padding:'7px 14px', borderRadius:10, fontSize:13, fontWeight:700, color:'#4B5563', cursor:'pointer', marginBottom:14, fontFamily:'Nunito,sans-serif' },
-  successBox: { background:'#D1FAE5', color:'#065F46', borderRadius:12, padding:'11px 14px', fontSize:13, fontWeight:700, marginBottom:14 },
-  errorBox:   { background:'#FEE2E2', color:'#DC2626', borderRadius:12, padding:'11px 14px', fontSize:13, fontWeight:600, marginBottom:14 },
-  label:      { display:'block', fontSize:13, fontWeight:700, color:'#4B5563', marginBottom:5 },
-  input:      { width:'100%', padding:'12px 14px', borderRadius:12, border:'2px solid #EDE9FE', fontSize:14, outline:'none', boxSizing:'border-box', fontFamily:'Nunito,sans-serif' },
-  btn:        { width:'100%', padding:'14px', borderRadius:14, border:'none', background:'linear-gradient(135deg,#7C3AED,#EC4899)', color:'#fff', fontSize:15, fontWeight:800, cursor:'pointer', fontFamily:'Nunito,sans-serif' },
-  switchText: { textAlign:'center', marginTop:16, fontSize:14, color:'#6B7280' },
-  link:       { color:'#7C3AED', fontWeight:700, textDecoration:'none' },
-};
+  const Alerts = () => (
+    <AnimatePresence>
+      {err && <motion.div initial={{ opacity:0, height:0 }} animate={{ opacity:1, height:'auto' }}
+        exit={{ opacity:0, height:0 }}
+        style={{ background:'rgba(239,68,68,0.1)', border:'1px solid rgba(239,68,68,0.3)',
+          borderRadius:10, padding:'10px 14px', marginBottom:12, color:'#FCA5A5',
+          fontSize:13, fontFamily:'Nunito,sans-serif', display:'flex', gap:8, alignItems:'center' }}>
+        ⚠️ {err}</motion.div>}
+      {ok && <motion.div initial={{ opacity:0, height:0 }} animate={{ opacity:1, height:'auto' }}
+        exit={{ opacity:0, height:0 }}
+        style={{ background:'rgba(16,185,129,0.1)', border:'1px solid rgba(16,185,129,0.3)',
+          borderRadius:10, padding:'10px 14px', marginBottom:12, color:'#6EE7B7',
+          fontSize:13, fontFamily:'Nunito,sans-serif', display:'flex', gap:8, alignItems:'center' }}>
+        ✅ {ok}</motion.div>}
+    </AnimatePresence>
+  );
+
+  const Btn = ({ label, onClick, disabled }) => (
+    <motion.button type={onClick?'button':'submit'} onClick={onClick}
+      disabled={disabled||load}
+      style={{ width:'100%', padding:'13px', borderRadius:12, border:'none', marginTop:8,
+        background:(disabled||load)?'#1E293B':`linear-gradient(135deg,${role.color},${role.color}BB)`,
+        color:(disabled||load)?'#64748B':'#fff', fontSize:14, fontWeight:800,
+        cursor:(disabled||load)?'not-allowed':'pointer', fontFamily:'Nunito,sans-serif',
+        boxShadow:(disabled||load)?'none':`0 4px 20px ${role.glow}`, transition:'all 0.2s' }}
+      whileHover={!disabled&&!load?{ scale:1.02, y:-1 }:{}}
+      whileTap={!disabled&&!load?{ scale:0.98 }:{}}>
+      {load
+        ? <span style={{ display:'flex', alignItems:'center', justifyContent:'center', gap:8 }}>
+            <motion.span animate={{ rotate:360 }} transition={{ duration:1, repeat:Infinity, ease:'linear' }}
+              style={{ display:'inline-block' }}>⏳</motion.span> Please wait...
+          </span>
+        : label}
+    </motion.button>
+  );
+
+  // ── STEP 1 ─────────────────────────────────────────────
+  if (step===1) return (
+    <Wrap>
+      <h2 style={{ fontSize:22, fontWeight:900, color:'#F1F5F9',
+        fontFamily:'Nunito,sans-serif', margin:'0 0 6px' }}>Create Account</h2>
+      <p style={{ color:'#94A3B8', fontSize:13, fontFamily:'Nunito,sans-serif', marginBottom:22 }}>
+        Select your role to get started
+      </p>
+      <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:10, marginBottom:24 }}>
+        {ROLES.map((r,i)=>(
+          <motion.div key={r.id}
+            style={{ borderRadius:14, padding:'16px 12px', cursor:'pointer',
+              position:'relative', overflow:'hidden',
+              background:ri===i?`rgba(${rgbOf(r.color)},0.12)`:'rgba(30,41,59,0.5)',
+              border:`1px solid ${ri===i?r.border:'#2D3A4F'}` }}
+            whileHover={{ scale:1.04, y:-2, borderColor:r.border,
+              background:`rgba(${rgbOf(r.color)},0.12)` }}
+            whileTap={{ scale:0.96 }} transition={{ duration:0.15 }}
+            onClick={()=>switchRole(i)}>
+            <div style={{ fontSize:30, marginBottom:6 }}>{r.emoji}</div>
+            <div style={{ fontSize:13, fontWeight:800, color:ri===i?r.color:'#F1F5F9',
+              fontFamily:'Nunito,sans-serif', transition:'color 0.2s' }}>{r.label}</div>
+            <div style={{ fontSize:11, color:'#64748B', fontFamily:'Nunito,sans-serif', marginTop:2 }}>{r.desc}</div>
+            {ri===i && <motion.div layoutId="rA" style={{ position:'absolute', inset:0, borderRadius:14,
+              background:`radial-gradient(circle at 20% 50%,${r.glow},transparent)`, pointerEvents:'none' }}
+              transition={{ type:'spring', bounce:0.25, duration:0.4 }}/>}
+          </motion.div>
+        ))}
+      </div>
+      <Alerts/>
+      <Btn label={`Continue as ${role.label} ${role.emoji}`}
+        onClick={()=>{ setStep(role.id==='student'?4:2); setErr(''); }}/>
+    </Wrap>
+  );
+
+  // ── STEP 2 ─────────────────────────────────────────────
+  if (step===2) return (
+    <Wrap>
+      <motion.button onClick={()=>setStep(1)} whileHover={{ x:-2 }}
+        style={{ background:'none', border:'none', cursor:'pointer', color:'#64748B',
+          fontSize:12, fontFamily:'Nunito,sans-serif', display:'flex', alignItems:'center',
+          gap:4, marginBottom:18, padding:0 }}>← Back</motion.button>
+      <div style={{ display:'flex', alignItems:'center', gap:10, marginBottom:22,
+        background:`rgba(${rgbOf(role.color)},0.08)`,
+        border:`1px solid rgba(${rgbOf(role.color)},0.2)`,
+        borderRadius:12, padding:'12px 14px' }}>
+        <span style={{ fontSize:24 }}>{role.emoji}</span>
+        <div>
+          <div style={{ fontSize:13, fontWeight:800, color:role.color, fontFamily:'Nunito,sans-serif' }}>
+            {role.label} Registration</div>
+          <div style={{ fontSize:11, color:'#64748B', fontFamily:'Nunito,sans-serif' }}>
+            Step 1 of 3 — Verify your email</div>
+        </div>
+        <div style={{ marginLeft:'auto', background:`rgba(${rgbOf(role.color)},0.15)`,
+          border:`1px solid ${role.border}`, borderRadius:999, padding:'3px 10px',
+          fontSize:11, color:role.color, fontFamily:'Nunito,sans-serif', fontWeight:700 }}>OTP</div>
+      </div>
+      <Alerts/>
+      <Inp label="📧 YOUR EMAIL ADDRESS" type="email" placeholder="your@email.com"
+        value={email} onChange={e=>{ setEmail(e.target.value); setErr(''); }}
+        required color={role.color}/>
+      <p style={{ fontSize:11, color:'#64748B', fontFamily:'Nunito,sans-serif', marginBottom:4 }}>
+        We'll send a 6-digit verification code to this email.
+      </p>
+      <Btn label="📧 Send Verification Code" onClick={sendCode}/>
+    </Wrap>
+  );
+
+  // ── STEP 3 ─────────────────────────────────────────────
+  if (step===3) return (
+    <Wrap>
+      <motion.button onClick={()=>{ setStep(2); setOtp(''); setOk(''); setErr(''); }} whileHover={{ x:-2 }}
+        style={{ background:'none', border:'none', cursor:'pointer', color:'#64748B',
+          fontSize:12, fontFamily:'Nunito,sans-serif', display:'flex', alignItems:'center',
+          gap:4, marginBottom:18, padding:0 }}>← Back</motion.button>
+      <div style={{ textAlign:'center', marginBottom:22 }}>
+        <motion.div style={{ fontSize:48 }} animate={{ scale:[1,1.08,1] }}
+          transition={{ duration:2, repeat:Infinity }}>📬</motion.div>
+        <div style={{ fontSize:18, fontWeight:900, color:role.color,
+          fontFamily:'Nunito,sans-serif', marginTop:8 }}>Check Your Email!</div>
+        <div style={{ fontSize:12, color:'#94A3B8', fontFamily:'Nunito,sans-serif', marginTop:4 }}>
+          Step 2 of 3 — Code sent to <strong style={{ color:'#F1F5F9' }}>{email}</strong>
+        </div>
+      </div>
+      <div style={{ background:'rgba(16,185,129,0.08)', border:'1px solid rgba(16,185,129,0.2)',
+        borderRadius:10, padding:'10px 14px', marginBottom:16,
+        color:'#6EE7B7', fontSize:12, fontFamily:'Nunito,sans-serif',
+        display:'flex', alignItems:'center', gap:8 }}>
+        ✅ Code sent! Check inbox and spam folder.
+      </div>
+      <Alerts/>
+      <div style={{ marginBottom:14 }}>
+        <label style={{ display:'block', fontSize:11, fontWeight:700, color:'#94A3B8',
+          marginBottom:8, fontFamily:'Nunito,sans-serif', letterSpacing:'0.8px' }}>
+          🔢 ENTER 6-DIGIT CODE
+        </label>
+        <motion.input type="text" maxLength={6} placeholder="0  0  0  0  0  0"
+          value={otp} onChange={e=>{ setOtp(e.target.value.replace(/\D/g,'')); setErr(''); }}
+          animate={otp.length===6?{ scale:[1,1.02,1] }:{}}
+          transition={{ duration:0.25 }}
+          style={{ width:'100%', padding:'16px', borderRadius:12, fontSize:26,
+            fontWeight:900, textAlign:'center', letterSpacing:10, boxSizing:'border-box',
+            background:'rgba(15,23,42,0.7)', color:'#F1F5F9', fontFamily:'Nunito,sans-serif',
+            border:`1px solid ${otp.length===6?role.color:'#2D3A4F'}`,
+            boxShadow:otp.length===6?`0 0 0 3px rgba(${rgbOf(role.color)},0.15)`:'none',
+            outline:'none', transition:'all 0.2s' }}/>
+      </div>
+      <Btn label="✅ Verify Code" onClick={verifyCode} disabled={otp.length!==6}/>
+      <motion.button type="button" whileHover={{ scale:1.01 }}
+        onClick={()=>{ setStep(2); setOtp(''); setOk(''); setErr(''); }}
+        style={{ width:'100%', padding:'12px', borderRadius:12, marginTop:10,
+          border:`1px solid rgba(${rgbOf(role.color)},0.3)`,
+          background:'transparent', color:role.color, fontSize:13,
+          fontWeight:700, cursor:'pointer', fontFamily:'Nunito,sans-serif' }}>
+        Resend Code 🔄
+      </motion.button>
+    </Wrap>
+  );
+
+  // ── STEP 4 ─────────────────────────────────────────────
+  return (
+    <Wrap>
+      <motion.button onClick={()=>{ setStep(needOTP?3:1); setErr(''); }} whileHover={{ x:-2 }}
+        style={{ background:'none', border:'none', cursor:'pointer', color:'#64748B',
+          fontSize:12, fontFamily:'Nunito,sans-serif', display:'flex', alignItems:'center',
+          gap:4, marginBottom:16, padding:0 }}>← Back</motion.button>
+
+      {/* Progress */}
+      <div style={{ display:'flex', alignItems:'center', gap:6, marginBottom:18 }}>
+        {(needOTP?[1,2,3]:[1,2]).map((_,i)=>(
+          <div key={i} style={{ flex:1, height:3, borderRadius:3,
+            background:role.color, transition:'background 0.3s' }}/>
+        ))}
+        <span style={{ fontSize:11, color:role.color, fontWeight:700,
+          fontFamily:'Nunito,sans-serif', whiteSpace:'nowrap' }}>
+          {needOTP?'Step 3 of 3':'Step 2 of 2'}
+        </span>
+      </div>
+
+      <div style={{ display:'flex', alignItems:'center', gap:10, marginBottom:18,
+        background:`rgba(${rgbOf(role.color)},0.08)`,
+        border:`1px solid rgba(${rgbOf(role.color)},0.2)`,
+        borderRadius:12, padding:'10px 14px' }}>
+        <span style={{ fontSize:22 }}>{role.emoji}</span>
+        <div>
+          <div style={{ fontSize:13, fontWeight:800, color:role.color, fontFamily:'Nunito,sans-serif' }}>
+            {role.label} — Complete Registration</div>
+          {needOTP && <div style={{ fontSize:11, color:'#10B981', fontFamily:'Nunito,sans-serif' }}>
+            ✅ Email verified: {email}</div>}
+        </div>
+      </div>
+
+      <Alerts/>
+
+      <form onSubmit={submit}>
+        <div style={{ display:'flex', gap:10 }}>
+          <div style={{ flex:1 }}>
+            <Inp label="FIRST NAME *" placeholder="Ali" value={form.first_name}
+              onChange={set('first_name')} required color={role.color}/>
+          </div>
+          <div style={{ flex:1 }}>
+            <Inp label="LAST NAME *" placeholder="Khan" value={form.last_name}
+              onChange={set('last_name')} required color={role.color}/>
+          </div>
+        </div>
+
+        <Inp label={`🎮 USERNAME *${role.id==='student'?' (used to log in)':''}`}
+          placeholder="letters, numbers, underscore"
+          value={form.username} onChange={set('username')} required color={role.color}/>
+
+        {needOTP && (
+          <div style={{ marginBottom:14 }}>
+            <label style={{ display:'block', fontSize:11, fontWeight:700, color:'#94A3B8',
+              marginBottom:7, fontFamily:'Nunito,sans-serif', letterSpacing:'0.8px' }}>📧 EMAIL</label>
+            <div style={{ background:'rgba(16,185,129,0.08)', border:'1px solid rgba(16,185,129,0.2)',
+              borderRadius:12, padding:'12px 14px', color:'#6EE7B7',
+              fontSize:14, fontFamily:'Nunito,sans-serif', fontWeight:600 }}>
+              ✅ {email}
+            </div>
+          </div>
+        )}
+
+        <div style={{ marginBottom:6 }}>
+          <Inp label="🔒 PASSWORD *" type={sp?'text':'password'}
+            placeholder="8+ chars, number & special char"
+            value={form.password} onChange={set('password')} required color={role.color}
+            right={<button type="button" onClick={()=>setSp(!sp)}
+              style={{ background:'none', border:'none', cursor:'pointer',
+                color:'#64748B', fontSize:15, padding:0, lineHeight:1 }}>
+              {sp?'🙈':'👁️'}</button>}/>
+          <PwStr pw={form.password}/>
+        </div>
+
+        <div style={{ marginBottom:4 }}>
+          <Inp label="🔒 CONFIRM PASSWORD *" type={sc?'text':'password'}
+            placeholder="Repeat your password"
+            value={form.confirm_password} onChange={set('confirm_password')} required color={role.color}
+            right={<button type="button" onClick={()=>setSc(!sc)}
+              style={{ background:'none', border:'none', cursor:'pointer',
+                color:'#64748B', fontSize:15, padding:0, lineHeight:1 }}>
+              {sc?'🙈':'👁️'}</button>}/>
+          {form.confirm_password && <div style={{ fontSize:11, marginBottom:10, marginTop:-6,
+            fontFamily:'Nunito,sans-serif', fontWeight:700,
+            color:form.password===form.confirm_password?'#10B981':'#EF4444' }}>
+            {form.password===form.confirm_password?'✅ Passwords match':'❌ Do not match'}
+          </div>}
+        </div>
+
+        {role.id==='student' && <>
+          <div style={{ marginBottom:14 }}>
+            <label style={{ display:'block', fontSize:11, fontWeight:700, color:'#94A3B8',
+              marginBottom:8, fontFamily:'Nunito,sans-serif', letterSpacing:'0.8px' }}>
+              🎂 AGE GROUP *
+            </label>
+            <div style={{ display:'flex', gap:8 }}>
+              {AGE.map(a=>(
+                <motion.div key={a.id}
+                  style={{ flex:1, borderRadius:12, padding:'10px 6px', textAlign:'center',
+                    cursor:'pointer',
+                    background:form.age_group===a.id?`rgba(${rgbOf(a.color)},0.15)`:'rgba(30,41,59,0.5)',
+                    border:`1px solid ${form.age_group===a.id?a.color:'#2D3A4F'}`,
+                    transition:'all 0.15s' }}
+                  whileHover={{ scale:1.05, borderColor:a.color }}
+                  whileTap={{ scale:0.95 }}
+                  onClick={()=>setForm(p=>({...p,age_group:a.id}))}>
+                  <div style={{ fontSize:20 }}>{a.emoji}</div>
+                  <div style={{ fontSize:11, fontWeight:800, marginTop:4, fontFamily:'Nunito,sans-serif',
+                    color:form.age_group===a.id?a.color:'#94A3B8', transition:'color 0.15s' }}>{a.label}</div>
+                </motion.div>
+              ))}
+            </div>
+            {!form.age_group && <div style={{ fontSize:11, color:'#EF4444', marginTop:4,
+              fontFamily:'Nunito,sans-serif' }}>Please select an age group</div>}
+          </div>
+          <Inp label="🏫 CLASS CODE (optional)" placeholder="Ask your teacher"
+            value={form.class_code} onChange={set('class_code')} color={role.color}/>
+        </>}
+
+        {role.id==='teacher' && <Inp label="🏛️ SCHOOL NAME *" placeholder="e.g. City School Lahore"
+          value={form.school_name} onChange={set('school_name')} required color={role.color}/>}
+
+        {role.id==='parent' && <>
+          <Inp label="👧 CHILD'S USERNAME *" placeholder="Your child's exact username"
+            value={form.child_username} onChange={set('child_username')} required color={role.color}/>
+          <div style={{ fontSize:11, color:'#64748B', fontFamily:'Nunito,sans-serif',
+            marginTop:-10, marginBottom:14 }}>Child must have registered as a student first.</div>
+        </>}
+
+        {role.id==='admin' && <>
+          <Inp label="🔑 ADMIN SECRET KEY *" type="password" placeholder="Contact system administrator"
+            value={form.admin_secret_key} onChange={set('admin_secret_key')} required color={role.color}/>
+          <div style={{ fontSize:11, color:'#EF4444', fontFamily:'Nunito,sans-serif',
+            marginTop:-10, marginBottom:14 }}>Only authorised administrators have this key.</div>
+        </>}
+
+        <Btn label={`Create ${role.label} Account 🎉`}
+          disabled={role.id==='student'&&!form.age_group}/>
+      </form>
+      <p style={{ textAlign:'center', marginTop:14, fontSize:13, color:'#64748B',
+        fontFamily:'Nunito,sans-serif' }}>
+        Have an account?{' '}
+        <Link to="/login" style={{ color:role.color, fontWeight:700, textDecoration:'none' }}>
+          Sign in →
+        </Link>
+      </p>
+    </Wrap>
+  );
+}

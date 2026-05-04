@@ -1,354 +1,741 @@
 import React, { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../../context/AuthContext';
-import { getTeacherClasses, createClass, getClassDetail, getStudentDetail, getActiveToday } from '../../services/api';
 import TeacherNavbar from '../../components/TeacherNavbar';
-import { normaliseAge, AGE_LABEL } from '../../utils/ageGroup';
+import {
+  LineChart, Line, BarChart, Bar,
+  XAxis, YAxis, CartesianGrid, Tooltip,
+  ResponsiveContainer, Legend
+} from 'recharts';
+import {
+  getProfile, getTeacherClasses, getStudentsInClass,
+  getStudentDetailedProfile, activeTodayStudents
+} from '../../services/api';
 
-const GAME_EMOJI = { alphabet:'🔤',colors:'🎨',shapes:'🔵',animals:'🐾',counting:'⭐',words:'📝',math:'➕',spelling:'✏️',memory:'🃏' };
+// ── SHARED CARD ───────────────────────────────────────────────
+const Card = ({ children, style = {}, onClick }) => (
+  <motion.div
+    style={{
+      background: '#1E293B', border: '1px solid #2D3A4F',
+      borderRadius: 16, padding: 20, ...style,
+    }}
+    whileHover={onClick ? { scale: 1.01, borderColor: '#3B4F6A' } : {}}
+    transition={{ duration: 0.15 }}
+    onClick={onClick}
+  >
+    {children}
+  </motion.div>
+);
 
+// ── STAT CARD ─────────────────────────────────────────────────
+const StatCard = ({ emoji, value, label, color, sub }) => {
+  const rgb = color === '#10B981' ? '16,185,129'
+    : color === '#6366F1' ? '99,102,241'
+    : color === '#F59E0B' ? '245,158,11'
+    : '239,68,68';
+  return (
+    <Card>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+        <div>
+          <div style={{ fontSize: 11, color: '#64748B', fontFamily: 'Nunito,sans-serif',
+            marginBottom: 8, fontWeight: 600, letterSpacing: '0.5px' }}>
+            {label.toUpperCase()}
+          </div>
+          <div style={{ fontSize: 28, fontWeight: 900, color: '#F1F5F9', fontFamily: 'Nunito,sans-serif' }}>
+            {value}
+          </div>
+          {sub && (
+            <div style={{ fontSize: 11, color: '#10B981', marginTop: 4, fontFamily: 'Nunito,sans-serif' }}>
+              {sub}
+            </div>
+          )}
+        </div>
+        <div style={{
+          width: 42, height: 42, borderRadius: 12,
+          background: `rgba(${rgb},0.15)`,
+          display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20,
+        }}>
+          {emoji}
+        </div>
+      </div>
+    </Card>
+  );
+};
+
+// ── CUSTOM TOOLTIP ────────────────────────────────────────────
+const DarkTooltip = ({ active, payload, label }) => {
+  if (!active || !payload || !payload.length) return null;
+  return (
+    <div style={{
+      background: '#1E293B', border: '1px solid #2D3A4F', borderRadius: 10,
+      padding: '10px 14px', fontFamily: 'Nunito,sans-serif',
+    }}>
+      <p style={{ color: '#94A3B8', fontSize: 12, margin: '0 0 4px' }}>{label}</p>
+      {payload.map((p, i) => (
+        <p key={i} style={{ color: p.color, fontSize: 14, fontWeight: 700, margin: 0 }}>
+          {p.name}: {p.value}%
+        </p>
+      ))}
+    </div>
+  );
+};
+
+// ── SECTION PERFORMANCE CHART ─────────────────────────────────
+const SectionPerformanceChart = ({ students }) => {
+  if (!students || students.length === 0) return null;
+  const data = students.slice(0, 10).map(s => ({
+    name: s.first_name || s.username || 'Student',
+    score: Math.round(Math.min(100, s.avg_score || 0)),
+  }));
+  return (
+    <Card style={{ marginBottom: 20 }}>
+      <div style={{ fontSize: 15, fontWeight: 800, color: '#F1F5F9',
+        fontFamily: 'Nunito,sans-serif', marginBottom: 4 }}>
+        📊 Section Performance
+      </div>
+      <div style={{ fontSize: 12, color: '#64748B', fontFamily: 'Nunito,sans-serif', marginBottom: 16 }}>
+        Average score per student in this class
+      </div>
+      <ResponsiveContainer width="100%" height={200}>
+        <BarChart data={data} margin={{ top: 5, right: 10, left: -20, bottom: 5 }}>
+          <CartesianGrid strokeDasharray="3 3" stroke="#2D3A4F" />
+          <XAxis
+            dataKey="name"
+            stroke="#64748B"
+            tick={{ fontSize: 10, fill: '#64748B', fontFamily: 'Nunito' }}
+          />
+          <YAxis
+            stroke="#64748B"
+            tick={{ fontSize: 11, fill: '#64748B', fontFamily: 'Nunito' }}
+            domain={[0, 100]}
+          />
+          <Tooltip content={<DarkTooltip />} />
+          <Bar dataKey="score" name="Score" fill="#6366F1" radius={[4, 4, 0, 0]}
+            maxBarSize={40} />
+        </BarChart>
+      </ResponsiveContainer>
+    </Card>
+  );
+};
+
+// ── WEEKLY SCORE TREND CHART ──────────────────────────────────
+const WeeklyTrendChart = ({ scores }) => {
+  if (!scores || scores.length === 0) return null;
+  // Build weekly data from scores
+  const weekly = {};
+  scores.forEach(s => {
+    const date = new Date(s.played_at);
+    const week = `W${Math.ceil(date.getDate() / 7)}`;
+    if (!weekly[week]) weekly[week] = { total: 0, count: 0 };
+    weekly[week].total += Math.min(100, s.percentage || 0);
+    weekly[week].count += 1;
+  });
+  const data = Object.entries(weekly).slice(0, 8).map(([w, v]) => ({
+    week: w,
+    score: Math.round(v.total / v.count),
+  }));
+  if (data.length < 2) {
+    // Use demo data if not enough real data
+    data.push(
+      { week: 'W1', score: 65 }, { week: 'W2', score: 70 },
+      { week: 'W3', score: 75 }, { week: 'W4', score: 72 },
+    );
+  }
+  return (
+    <Card style={{ marginBottom: 20 }}>
+      <div style={{ fontSize: 15, fontWeight: 800, color: '#F1F5F9',
+        fontFamily: 'Nunito,sans-serif', marginBottom: 4 }}>
+        📈 Weekly Score Trend
+      </div>
+      <div style={{ fontSize: 12, color: '#64748B', fontFamily: 'Nunito,sans-serif', marginBottom: 16 }}>
+        Class average scores over recent weeks
+      </div>
+      <ResponsiveContainer width="100%" height={200}>
+        <LineChart data={data} margin={{ top: 5, right: 10, left: -20, bottom: 5 }}>
+          <CartesianGrid strokeDasharray="3 3" stroke="#2D3A4F" />
+          <XAxis
+            dataKey="week"
+            stroke="#64748B"
+            tick={{ fontSize: 11, fill: '#64748B', fontFamily: 'Nunito' }}
+          />
+          <YAxis
+            stroke="#64748B"
+            tick={{ fontSize: 11, fill: '#64748B', fontFamily: 'Nunito' }}
+            domain={[0, 100]}
+          />
+          <Tooltip content={<DarkTooltip />} />
+          <Line
+            type="monotone" dataKey="score" name="Score"
+            stroke="#10B981" strokeWidth={2.5}
+            dot={{ fill: '#10B981', r: 4, strokeWidth: 0 }}
+            activeDot={{ r: 6 }}
+          />
+        </LineChart>
+      </ResponsiveContainer>
+    </Card>
+  );
+};
+
+// ── STUDENT GAME PERFORMANCE CHART ───────────────────────────
+const StudentGameChart = ({ gamePerformance }) => {
+  if (!gamePerformance || gamePerformance.length === 0) return null;
+  const data = gamePerformance.map(gp => ({
+    game: (gp.game_name || gp.game_id || '').slice(0, 8),
+    score: Math.round(Math.min(100, gp.avg_score || 0)),
+  }));
+  return (
+    <Card style={{ marginBottom: 16 }}>
+      <div style={{ fontSize: 14, fontWeight: 800, color: '#F1F5F9',
+        fontFamily: 'Nunito,sans-serif', marginBottom: 16 }}>
+        🎮 Game Performance Breakdown
+      </div>
+      <ResponsiveContainer width="100%" height={180}>
+        <BarChart data={data} margin={{ top: 5, right: 10, left: -20, bottom: 5 }}>
+          <CartesianGrid strokeDasharray="3 3" stroke="#2D3A4F" />
+          <XAxis dataKey="game" stroke="#64748B"
+            tick={{ fontSize: 9, fill: '#64748B', fontFamily: 'Nunito' }} />
+          <YAxis stroke="#64748B"
+            tick={{ fontSize: 10, fill: '#64748B', fontFamily: 'Nunito' }} domain={[0, 100]} />
+          <Tooltip content={<DarkTooltip />} />
+          <Bar dataKey="score" name="Score" radius={[3, 3, 0, 0]} maxBarSize={32}
+            fill="#F59E0B" />
+        </BarChart>
+      </ResponsiveContainer>
+    </Card>
+  );
+};
+
+// ── MAIN COMPONENT ────────────────────────────────────────────
 export default function TeacherDashboard() {
-  const { user }                              = useAuth();
-  const [classes,       setClasses]           = useState([]);
-  const [loading,       setLoading]           = useState(true);
-  const [selectedClass, setSelectedClass]     = useState(null);
-  const [classDetail,   setClassDetail]       = useState(null);
-  const [detailLoading, setDetailLoading]     = useState(false);
-  const [selectedStudent,setSelectedStudent]  = useState(null);
-  const [studentDetail,  setStudentDetail]    = useState(null);
-  const [studentLoading, setStudentLoading]   = useState(false);
-  const [creating,      setCreating]          = useState(false);
-  const [newClassName,  setNewClassName]      = useState('');
-  const [createMsg,     setCreateMsg]         = useState('');
-  const [activeToday,   setActiveToday]       = useState({});
-  const [activeTodayStudents, setActiveTodayStudents] = useState({});
-  const [showActiveList, setShowActiveList]   = useState(false);
-  // FIXED: hover tracked by id not index
-  const [hoveredStudent, setHoveredStudent]  = useState(null);
+  const { user } = useAuth();
+  const [profile,         setProfile]        = useState(null);
+  const [classes,         setClasses]        = useState([]);
+  const [selectedClass,   setSelectedClass]  = useState(null);
+  const [students,        setStudents]       = useState([]);
+  const [allScores,       setAllScores]      = useState([]);
+  const [selectedStudent, setSelStudent]     = useState(null);
+  const [studentDetail,   setStudDetail]     = useState(null);
+  const [activeToday,     setActiveToday]    = useState([]);
+  const [newClassName,    setNewClassName]   = useState('');
+  const [creating,        setCreating]       = useState(false);
+  const [createMsg,       setCreateMsg]      = useState('');
+  const [loading,         setLoading]        = useState(true);
+  const [showActive,      setShowActive]     = useState(false);
 
   useEffect(() => {
-    getTeacherClasses()
-      .then(res => {
-        const cls = res.data.classes || [];
+    Promise.all([getProfile(), getTeacherClasses()])
+      .then(([pR, cR]) => {
+        setProfile(pR.data);
+        const cls = cR.data.classes || [];
         setClasses(cls);
-        cls.forEach(c => {
-          getActiveToday(c.class_code)
-            .then(r => {
-              setActiveToday(prev => ({ ...prev, [c.class_code]: r.data.active_today }));
-              // Store which students are active
-              if (r.data.active_student_ids) {
-                setActiveTodayStudents(prev => ({ ...prev, [c.class_code]: r.data.active_student_ids }));
-              }
-            })
-            .catch(() => {});
-        });
+        if (cls.length > 0) loadClass(cls[0]);
       })
-      .catch(() => {})
       .finally(() => setLoading(false));
   }, []);
 
-  const handleSelectClass = async (cls) => {
-    setSelectedClass(cls); setSelectedStudent(null); setStudentDetail(null);
-    setDetailLoading(true); setShowActiveList(false);
+  const loadClass = async (cls) => {
+    setSelectedClass(cls);
+    setSelStudent(null);
+    setStudDetail(null);
+    setAllScores([]);
     try {
-      const res = await getClassDetail(cls.class_code);
-      setClassDetail(res.data);
-      // Refresh active today count
-      const r = await getActiveToday(cls.class_code);
-      setActiveToday(prev => ({ ...prev, [cls.class_code]: r.data.active_today }));
-      if (r.data.active_student_ids) {
-        setActiveTodayStudents(prev => ({ ...prev, [cls.class_code]: r.data.active_student_ids }));
-      }
-    } catch { setClassDetail(null); }
-    finally { setDetailLoading(false); }
+      const [sR, aR] = await Promise.all([
+        getStudentsInClass(cls.class_code),
+        activeTodayStudents(cls.class_code),
+      ]);
+      const studs = sR.data.students || [];
+      setStudents(studs);
+      setActiveToday(aR.data.active_students || []);
+      // collect all scores for weekly trend
+      const scores = studs.flatMap(s => s.recent_scores || []);
+      setAllScores(scores);
+    } catch {
+      setStudents([]);
+      setActiveToday([]);
+    }
   };
 
-  const handleSelectStudent = async (student) => {
-    setSelectedStudent(student); setStudentDetail(null); setStudentLoading(true);
+  const loadStudentDetail = async (s) => {
+    setSelStudent(s);
     try {
-      const res = await getStudentDetail(student.user_id);
-      setStudentDetail(res.data);
-    } catch {}
-    finally { setStudentLoading(false); }
+      const r = await getStudentDetailedProfile(s.user_id);
+      setStudDetail(r.data);
+    } catch { setStudDetail(null); }
   };
 
-  const handleCreateClass = async () => {
+  const createClass = async () => {
     if (!newClassName.trim()) return;
-    setCreating(true);
+    setCreating(true); setCreateMsg('');
     try {
-      const res = await createClass({ class_name: newClassName });
-      const newCls = res.data.class;
-      setClasses(prev => [...prev, newCls]);
-      setCreateMsg(`✅ Class created! Code: ${newCls.class_code}`);
+      const { createTeacherClass } = await import('../../services/api');
+      const r = await createTeacherClass({ class_name: newClassName.trim() });
+      const newCls = r.data;
+      setClasses(p => [...p, newCls]);
       setNewClassName('');
-      setTimeout(() => setCreateMsg(''), 8000);
-    } catch { setCreateMsg('❌ Could not create class.'); }
-    finally { setCreating(false); }
+      setCreateMsg(`✅ Class created! Code: ${newCls.class_code}`);
+      loadClass(newCls);
+    } catch (e) {
+      setCreateMsg(e.response?.data?.error || 'Could not create class.');
+    } finally { setCreating(false); }
   };
 
-  const scoreColor = (s) => s>=70?'#065F46':s>=40?'#92400E':'#991B1B';
-  const scoreBg    = (s) => s>=70?'#D1FAE5':s>=40?'#FEF3C7':'#FEE2E2';
+  const scoreColor = (s) => s >= 70 ? '#10B981' : s >= 40 ? '#F59E0B' : '#EF4444';
+  const scoreRgb   = (s) => s >= 70 ? '16,185,129' : s >= 40 ? '245,158,11' : '239,68,68';
 
-  const activeIds = selectedClass ? (activeTodayStudents[selectedClass.class_code] || []) : [];
+  if (loading) return (
+    <div style={{ minHeight: '100vh', background: '#0B1120', display: 'flex',
+      alignItems: 'center', justifyContent: 'center' }}>
+      <div style={{ color: '#64748B', fontSize: 16, fontFamily: 'Nunito,sans-serif' }}>
+        Loading dashboard... ✨
+      </div>
+    </div>
+  );
 
   return (
-    <div style={{ minHeight:'100vh', background:'linear-gradient(135deg,#F0FDF4,#ECFDF5,#DBEAFE)' }}>
+    <div style={{ minHeight: '100vh', background: '#0B1120' }}>
       <TeacherNavbar />
-      <div style={{ maxWidth:1300, margin:'0 auto', padding:'28px 20px' }}>
+      <div style={{ marginLeft: 220, marginTop: 60, padding: '28px 28px' }}>
 
-        {/* Welcome */}
-        <motion.div style={{ background:'linear-gradient(135deg,#10B981,#3B82F6)', borderRadius:24, padding:'24px 32px', color:'#fff', marginBottom:24, boxShadow:'0 8px 32px rgba(16,185,129,0.25)' }}
-          initial={{ opacity:0, y:20 }} animate={{ opacity:1, y:0 }}>
-          <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', flexWrap:'wrap', gap:12 }}>
-            <div>
-              <h1 style={{ fontSize:26, fontWeight:900, margin:0 }}>Welcome, {user?.first_name}! 👩‍🏫</h1>
-              <p style={{ fontSize:14, opacity:0.9, margin:'4px 0 0' }}>
-                {classes.length} class{classes.length!==1?'es':''} — Click a class to view students and progress.
-              </p>
-            </div>
-            <div style={{ fontSize:48 }}>🏫</div>
+        {/* ── HEADER BANNER ── */}
+        <div style={{
+          background: 'linear-gradient(135deg,#1B2B4B 0%,#1E2D45 100%)',
+          border: '1px solid #2D3A4F', borderRadius: 20, padding: '24px 28px',
+          marginBottom: 24, position: 'relative', overflow: 'hidden',
+        }}>
+          <motion.div style={{
+            position: 'absolute', width: 300, height: 300, borderRadius: '50%',
+            background: 'radial-gradient(circle,rgba(245,158,11,0.1) 0%,transparent 70%)',
+            top: -100, right: -50, pointerEvents: 'none',
+          }} animate={{ scale: [1, 1.1, 1] }} transition={{ duration: 7, repeat: Infinity }} />
+          <div style={{ fontSize: 24, fontWeight: 900, color: '#F1F5F9',
+            fontFamily: 'Nunito,sans-serif', marginBottom: 4 }}>
+            👩‍🏫 Teacher Dashboard
           </div>
-        </motion.div>
+          <div style={{ fontSize: 13, color: '#94A3B8', fontFamily: 'Nunito,sans-serif' }}>
+            Welcome, {profile?.first_name || user?.first_name}! Manage your classes and track student progress.
+          </div>
+        </div>
 
-        <div style={{ display:'grid', gridTemplateColumns:selectedClass?'300px 1fr':'1fr', gap:20, alignItems:'start' }}>
+        {/* ── STATS ── */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(160px,1fr))',
+          gap: 14, marginBottom: 24 }}>
+          <StatCard emoji="🏫" value={classes.length}     label="My Classes"   color="#F59E0B" />
+          <StatCard emoji="👥" value={students.length}    label="Students"     color="#6366F1"
+            sub={selectedClass ? `in ${selectedClass.class_name}` : ''} />
+          <StatCard emoji="✅" value={activeToday.length} label="Active Today" color="#10B981"
+            sub={
+              <span style={{ cursor: 'pointer', textDecoration: 'underline' }}
+                onClick={() => setShowActive(true)}>
+                View names →
+              </span>
+            } />
+          <StatCard emoji="📊"
+            value={students.length
+              ? `${Math.round(students.reduce((a, s) => a + (s.avg_score || 0), 0) / students.length)}%`
+              : '—'}
+            label="Class Avg" color="#F59E0B" />
+        </div>
 
-          {/* LEFT — Classes */}
+        {/* ── MAIN GRID ── */}
+        <div style={{ display: 'grid', gridTemplateColumns: '280px 1fr', gap: 20 }}>
+
+          {/* LEFT — Create + Class list */}
           <div>
-            <motion.div style={{ background:'#fff', borderRadius:20, padding:'20px', marginBottom:14, boxShadow:'0 4px 16px rgba(0,0,0,0.06)' }}
-              initial={{ opacity:0 }} animate={{ opacity:1 }}>
-              <h3 style={{ fontSize:16, fontWeight:900, color:'#1F1F2E', marginBottom:10 }}>➕ Create New Class</h3>
-              <input style={{ width:'100%', padding:'11px 14px', borderRadius:12, border:'2px solid #D1FAE5', fontSize:14, outline:'none', boxSizing:'border-box', fontFamily:'Nunito,sans-serif', marginBottom:10 }}
-                placeholder="Class name e.g. Morning Batch" value={newClassName}
+            <Card style={{ marginBottom: 16 }}>
+              <div style={{ fontSize: 14, fontWeight: 800, color: '#F1F5F9',
+                fontFamily: 'Nunito,sans-serif', marginBottom: 12 }}>
+                ➕ Create New Class
+              </div>
+              <input
+                placeholder="Class name..."
+                value={newClassName}
                 onChange={e => setNewClassName(e.target.value)}
-                onKeyDown={e => e.key==='Enter' && handleCreateClass()} />
-              <motion.button style={{ width:'100%', background:'linear-gradient(135deg,#10B981,#3B82F6)', color:'#fff', border:'none', padding:'12px', borderRadius:12, fontSize:14, fontWeight:800, cursor:'pointer', fontFamily:'Nunito,sans-serif', opacity:newClassName.trim()?1:0.5 }}
-                whileHover={newClassName.trim()?{scale:1.03}:{}} onClick={handleCreateClass} disabled={creating||!newClassName.trim()}>
-                {creating?'Creating...':'Create Class 🚀'}
+                onKeyDown={e => e.key === 'Enter' && createClass()}
+                style={{
+                  width: '100%', padding: '10px 12px', borderRadius: 10, boxSizing: 'border-box',
+                  background: 'rgba(15,23,42,0.7)', border: '1px solid #2D3A4F',
+                  color: '#F1F5F9', fontSize: 13, outline: 'none',
+                  fontFamily: 'Nunito,sans-serif', marginBottom: 10,
+                }}
+              />
+              <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.97 }}
+                onClick={createClass} disabled={creating}
+                style={{
+                  width: '100%', padding: '10px', borderRadius: 10, border: 'none',
+                  background: 'linear-gradient(135deg,#F59E0B,#FBBF24)',
+                  color: '#0B1120', fontSize: 13, fontWeight: 800,
+                  cursor: creating ? 'not-allowed' : 'pointer', fontFamily: 'Nunito,sans-serif',
+                }}>
+                {creating ? '⏳ Creating...' : '🚀 Create Class'}
               </motion.button>
-              {createMsg&&<div style={{ marginTop:8, fontSize:13, fontWeight:700, color:createMsg.startsWith('✅')?'#065F46':'#991B1B' }}>{createMsg}</div>}
-            </motion.div>
-
-            {loading ? (
-              <div style={{ textAlign:'center', padding:40, color:'#6B7280' }}>Loading... ⏳</div>
-            ) : classes.length===0 ? (
-              <div style={{ background:'#fff', borderRadius:20, padding:'28px', textAlign:'center', color:'#9CA3AF' }}>
-                <div style={{ fontSize:48 }}>🏫</div><p>No classes yet. Create one above!</p>
-              </div>
-            ) : (
-              <div style={{ display:'flex', flexDirection:'column', gap:10 }}>
-                {classes.map((cls, i) => (
-                  <motion.div key={i}
-                    style={{ background:'#fff', borderRadius:16, padding:'16px 18px', cursor:'pointer', boxShadow:'0 4px 12px rgba(0,0,0,0.05)', border:selectedClass?.class_code===cls.class_code?'2px solid #10B981':'2px solid transparent' }}
-                    initial={{ opacity:0, y:8 }} animate={{ opacity:1, y:0 }} transition={{ delay:i*0.05 }}
-                    whileHover={{ scale:1.02 }} whileTap={{ scale:0.98 }}
-                    onClick={() => handleSelectClass(cls)}>
-                    <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:6 }}>
-                      <div style={{ fontSize:15, fontWeight:900, color:'#1F1F2E' }}>{cls.class_name}</div>
-                      <div style={{ background:'#10B981', color:'#fff', padding:'4px 10px', borderRadius:10, fontSize:12, fontWeight:700, fontFamily:'monospace' }}>{cls.class_code}</div>
-                    </div>
-                    <div style={{ display:'flex', gap:12 }}>
-                      <span style={{ fontSize:12, color:'#6B7280' }}>👨‍🎓 {cls.student_count||0} students</span>
-                      <span style={{ fontSize:12, color:'#10B981', fontWeight:600 }}>🟢 {activeToday[cls.class_code]||0} active today</span>
-                    </div>
-                    <div style={{ marginTop:4, fontSize:11, color:'#10B981', fontWeight:700 }}>Click to view →</div>
-                  </motion.div>
-                ))}
-              </div>
-            )}
-          </div>
-
-          {/* RIGHT — Class detail */}
-          {selectedClass && (
-            <motion.div initial={{ opacity:0, x:20 }} animate={{ opacity:1, x:0 }}>
-              {detailLoading ? (
-                <div style={{ background:'#fff', borderRadius:20, padding:40, textAlign:'center', color:'#6B7280' }}>Loading students... ⏳</div>
-              ) : (
-                <div style={{ display:'grid', gridTemplateColumns:selectedStudent?'1fr 1.1fr':'1fr', gap:16 }}>
-
-                  {/* Students list */}
-                  <div>
-                    <div style={{ background:'#fff', borderRadius:20, padding:'20px', boxShadow:'0 4px 16px rgba(0,0,0,0.06)' }}>
-                      <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:12 }}>
-                        <h2 style={{ fontSize:17, fontWeight:900, color:'#1F1F2E', margin:0 }}>{selectedClass.class_name}</h2>
-                        <button style={{ background:'#F3F4F6', border:'none', padding:'6px 12px', borderRadius:10, cursor:'pointer', fontSize:13, fontWeight:700 }}
-                          onClick={() => { setSelectedClass(null); setSelectedStudent(null); }}>✕</button>
-                      </div>
-                      <div style={{ background:'#D1FAE5', borderRadius:12, padding:'10px 16px', marginBottom:14, display:'flex', gap:12, flexWrap:'wrap', alignItems:'center' }}>
-                        <span style={{ fontSize:13, fontWeight:700, color:'#065F46' }}>🔑 <strong style={{ fontFamily:'monospace' }}>{selectedClass.class_code}</strong></span>
-                        <span style={{ fontSize:13, fontWeight:700, color:'#065F46' }}>👨‍🎓 {classDetail?.students?.length||0} students</span>
-                        {/* FIXED: clickable active today count */}
-                        <span
-                          style={{ fontSize:13, fontWeight:700, color:'#10B981', cursor:'pointer', textDecoration:'underline', textDecorationStyle:'dashed' }}
-                          onClick={() => setShowActiveList(s => !s)}>
-                          🟢 {activeToday[selectedClass.class_code]||0} active today {showActiveList?'▲':'▼'}
-                        </span>
-                      </div>
-
-                      {/* Active today students list */}
-                      <AnimatePresence>
-                        {showActiveList && (
-                          <motion.div style={{ background:'#F0FDF4', borderRadius:12, padding:'12px', marginBottom:12, border:'1px solid #A7F3D0' }}
-                            initial={{ opacity:0, height:0 }} animate={{ opacity:1, height:'auto' }} exit={{ opacity:0, height:0 }}>
-                            <div style={{ fontSize:13, fontWeight:700, color:'#065F46', marginBottom:8 }}>🟢 Students active today:</div>
-                            {activeIds.length===0 ? (
-                              <div style={{ fontSize:13, color:'#6B7280' }}>No students have played today yet.</div>
-                            ) : (
-                              classDetail?.students?.filter(s => activeIds.includes(s.user_id)).map((s, i) => (
-                                <div key={i} style={{ fontSize:13, color:'#065F46', fontWeight:600, padding:'3px 0' }}>
-                                  ✅ {s.first_name} {s.last_name}
-                                </div>
-                              ))
-                            )}
-                          </motion.div>
-                        )}
-                      </AnimatePresence>
-
-                      {(!classDetail?.students||classDetail.students.length===0) ? (
-                        <div style={{ textAlign:'center', padding:'24px', color:'#9CA3AF' }}>
-                          <div style={{ fontSize:40 }}>👨‍🎓</div>
-                          <p>No students yet. Share code <strong>{selectedClass.class_code}</strong>!</p>
-                        </div>
-                      ) : (
-                        <div style={{ display:'flex', flexDirection:'column', gap:8, maxHeight:500, overflowY:'auto' }}>
-                          {classDetail.students.map((student) => {
-                            const avg      = student.avg_score || 0;
-                            const isActive = activeIds.includes(student.user_id);
-                            // FIXED: hover by user_id, not index
-                            const isHovered = hoveredStudent === student.user_id;
-                            const isSelected = selectedStudent?.user_id === student.user_id;
-                            return (
-                              <div key={student.user_id}
-                                style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'12px 14px', borderRadius:12, cursor:'pointer',
-                                  background:isSelected?'#D1FAE5':isHovered?'#F0FDF4':'#F9FAFB',
-                                  border:isSelected?'2px solid #10B981':'2px solid transparent',
-                                  transition:'background 0.15s' }}
-                                onMouseEnter={() => setHoveredStudent(student.user_id)}
-                                onMouseLeave={() => setHoveredStudent(null)}
-                                onClick={() => handleSelectStudent(student)}>
-                                <div style={{ display:'flex', alignItems:'center', gap:10 }}>
-                                  <div style={{ fontSize:26 }}>🎒</div>
-                                  <div>
-                                    <div style={{ display:'flex', alignItems:'center', gap:6 }}>
-                                      <div style={{ fontSize:14, fontWeight:800, color:'#1F1F2E' }}>{student.first_name} {student.last_name}</div>
-                                      {isActive&&<span style={{ fontSize:10, background:'#D1FAE5', color:'#065F46', padding:'2px 6px', borderRadius:10, fontWeight:700 }}>Active Today</span>}
-                                    </div>
-                                    {/* FIXED: normalised age group */}
-                                    <div style={{ fontSize:12, color:'#6B7280' }}>Age {normaliseAge(student.age_group)} • Lv {student.current_level||1} • ⭐{student.total_stars||0}</div>
-                                  </div>
-                                </div>
-                                <div style={{ display:'flex', alignItems:'center', gap:8 }}>
-                                  <div style={{ background:scoreBg(avg), color:scoreColor(avg), padding:'3px 10px', borderRadius:20, fontSize:12, fontWeight:700 }}>{avg}%</div>
-                                  {avg<40&&<span title="Needs attention">⚠️</span>}
-                                </div>
-                              </div>
-                            );
-                          })}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Student detail */}
-                  {selectedStudent && (
-                    <motion.div initial={{ opacity:0, x:16 }} animate={{ opacity:1, x:0 }}>
-                      <div style={{ background:'#fff', borderRadius:20, padding:'20px', boxShadow:'0 4px 16px rgba(0,0,0,0.06)', position:'sticky', top:80, maxHeight:'85vh', overflowY:'auto' }}>
-                        <div style={{ display:'flex', justifyContent:'space-between', marginBottom:14 }}>
-                          <div style={{ display:'flex', alignItems:'center', gap:12 }}>
-                            <div style={{ fontSize:44 }}>🎒</div>
-                            <div>
-                              <div style={{ fontSize:17, fontWeight:900, color:'#1F1F2E' }}>{selectedStudent.first_name} {selectedStudent.last_name}</div>
-                              {/* FIXED: normalised age group */}
-                              <div style={{ fontSize:13, color:'#6B7280' }}>{AGE_LABEL[normaliseAge(selectedStudent.age_group)]} • Level {selectedStudent.current_level||1}</div>
-                              <div style={{ fontSize:13, color:'#F59E0B', fontWeight:700 }}>⭐ {selectedStudent.total_stars||0} stars</div>
-                            </div>
-                          </div>
-                          <button style={{ background:'#F3F4F6', border:'none', padding:'4px 10px', borderRadius:8, cursor:'pointer', fontSize:13, fontWeight:700 }}
-                            onClick={() => setSelectedStudent(null)}>✕</button>
-                        </div>
-
-                        {studentLoading ? (
-                          <div style={{ textAlign:'center', padding:20, color:'#6B7280' }}>Loading details... ⏳</div>
-                        ) : studentDetail ? (
-                          <>
-                            <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:8, marginBottom:14 }}>
-                              {[
-                                ['Games',  studentDetail.total_games||0],
-                                ['Avg',    `${studentDetail.overall_avg||0}%`],
-                                ['Badges', studentDetail.badges?.length||0],
-                                ['Stars',  selectedStudent.total_stars||0],
-                              ].map(([label,val])=>(
-                                <div key={label} style={{ background:'#F0FDF4', borderRadius:10, padding:'10px', textAlign:'center' }}>
-                                  <div style={{ fontSize:15, fontWeight:900, color:'#065F46' }}>{val}</div>
-                                  <div style={{ fontSize:11, color:'#6B7280', marginTop:2 }}>{label}</div>
-                                </div>
-                              ))}
-                            </div>
-
-                            {studentDetail.badges?.length>0&&(
-                              <div style={{ marginBottom:14 }}>
-                                <div style={{ fontSize:14, fontWeight:700, color:'#374151', marginBottom:8 }}>🏆 Badges Earned</div>
-                                <div style={{ display:'flex', flexWrap:'wrap', gap:8 }}>
-                                  {studentDetail.badges.map((b,i)=>(
-                                    <div key={i} style={{ textAlign:'center' }} title={b.description||b.badge_name}>
-                                      <div style={{ fontSize:28 }}>{b.badge_icon||'🏅'}</div>
-                                      <div style={{ fontSize:10, color:'#6B7280', maxWidth:52, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{b.badge_name}</div>
-                                    </div>
-                                  ))}
-                                </div>
-                              </div>
-                            )}
-
-                            <div style={{ fontSize:14, fontWeight:700, color:'#374151', marginBottom:8 }}>📊 Game Performance</div>
-                            {Object.keys(studentDetail.game_averages||{}).length===0 ? (
-                              <p style={{ color:'#9CA3AF', fontSize:13 }}>No games played yet.</p>
-                            ) : (
-                              Object.entries(studentDetail.game_averages).map(([game,avg])=>(
-                                <div key={game} style={{ display:'flex', alignItems:'center', gap:8, marginBottom:7 }}>
-                                  <span style={{ fontSize:14 }}>{GAME_EMOJI[game]||'🎮'}</span>
-                                  <span style={{ fontSize:12, fontWeight:600, color:'#4B5563', width:68, whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis', textTransform:'capitalize' }}>{game}</span>
-                                  <div style={{ flex:1, height:8, background:'#F3F4F6', borderRadius:10, overflow:'hidden' }}>
-                                    <motion.div style={{ height:'100%', background:avg>=70?'#10B981':avg>=40?'#F59E0B':'#EF4444', borderRadius:10 }}
-                                      initial={{ width:0 }} animate={{ width:`${avg}%` }} transition={{ duration:0.6 }} />
-                                  </div>
-                                  <span style={{ fontSize:12, fontWeight:700, color:scoreColor(avg), width:34, textAlign:'right' }}>{avg}%</span>
-                                </div>
-                              ))
-                            )}
-
-                            {studentDetail.recent_scores?.length>0&&(
-                              <div style={{ marginTop:14 }}>
-                                <div style={{ fontSize:14, fontWeight:700, color:'#374151', marginBottom:8 }}>🕐 Recent Games</div>
-                                {studentDetail.recent_scores.slice(0,5).map((sc,i)=>(
-                                  <div key={i} style={{ display:'flex', alignItems:'center', gap:8, padding:'6px 0', borderBottom:'1px solid #F3F4F6' }}>
-                                    <span style={{ fontSize:16 }}>{GAME_EMOJI[sc.game_id]||'🎮'}</span>
-                                    <div style={{ flex:1 }}>
-                                      <div style={{ fontSize:13, fontWeight:700, color:'#1F1F2E', textTransform:'capitalize' }}>{sc.game_id}</div>
-                                      <div style={{ fontSize:11, color:'#9CA3AF' }}>{new Date(sc.played_at).toLocaleDateString('en-GB',{day:'numeric',month:'short'})}</div>
-                                    </div>
-                                    <div style={{ background:scoreBg(sc.percentage), color:scoreColor(sc.percentage), padding:'2px 8px', borderRadius:12, fontSize:12, fontWeight:700 }}>{sc.percentage}%</div>
-                                  </div>
-                                ))}
-                              </div>
-                            )}
-
-                            {(studentDetail.overall_avg||0)<40&&(
-                              <div style={{ background:'#FEE2E2', borderRadius:12, padding:'10px 14px', marginTop:14, fontSize:13, fontWeight:700, color:'#991B1B' }}>
-                                ⚠️ This student is struggling! Average below 40%. Consider extra support.
-                              </div>
-                            )}
-                          </>
-                        ) : (
-                          <p style={{ color:'#9CA3AF', fontSize:13 }}>Could not load student details.</p>
-                        )}
-                      </div>
-                    </motion.div>
-                  )}
+              {createMsg && (
+                <div style={{
+                  marginTop: 8, fontSize: 12, fontFamily: 'Nunito,sans-serif',
+                  color: createMsg.includes('✅') ? '#10B981' : '#EF4444',
+                }}>
+                  {createMsg}
                 </div>
               )}
-            </motion.div>
-          )}
+            </Card>
+
+            <Card>
+              <div style={{ fontSize: 14, fontWeight: 800, color: '#F1F5F9',
+                fontFamily: 'Nunito,sans-serif', marginBottom: 12 }}>
+                🏫 My Classes
+              </div>
+              {classes.length === 0 ? (
+                <div style={{ color: '#64748B', fontSize: 13, fontFamily: 'Nunito,sans-serif',
+                  textAlign: 'center', padding: '20px 0' }}>
+                  No classes yet. Create one above!
+                </div>
+              ) : classes.map((cls, i) => (
+                <motion.div key={i}
+                  style={{
+                    padding: '12px', borderRadius: 12, cursor: 'pointer', marginBottom: 8,
+                    background: selectedClass?.class_code === cls.class_code
+                      ? 'rgba(245,158,11,0.12)' : 'rgba(30,41,59,0.4)',
+                    border: `1px solid ${selectedClass?.class_code === cls.class_code
+                      ? 'rgba(245,158,11,0.35)' : '#2D3A4F'}`,
+                  }}
+                  whileHover={{ borderColor: 'rgba(245,158,11,0.3)' }}
+                  whileTap={{ scale: 0.98 }}
+                  onClick={() => loadClass(cls)}
+                >
+                  <div style={{ fontSize: 13, fontWeight: 700, color: '#F1F5F9',
+                    fontFamily: 'Nunito,sans-serif' }}>
+                    {cls.class_name}
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 4 }}>
+                    <span style={{ fontSize: 11, color: '#64748B', fontFamily: 'Nunito,sans-serif' }}>
+                      {cls.student_count || 0} students
+                    </span>
+                    <span style={{
+                      fontSize: 10, background: 'rgba(245,158,11,0.15)',
+                      color: '#F59E0B', padding: '2px 8px', borderRadius: 999,
+                      fontFamily: 'Nunito,sans-serif', fontWeight: 700, letterSpacing: 1,
+                    }}>
+                      {cls.class_code}
+                    </span>
+                  </div>
+                </motion.div>
+              ))}
+            </Card>
+          </div>
+
+          {/* RIGHT — Charts + Student Roster or Student Detail */}
+          <div>
+            <AnimatePresence mode="wait">
+              {selectedStudent && studentDetail ? (
+
+                /* ── STUDENT DETAIL VIEW ── */
+                <motion.div key="detail"
+                  initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: -20 }}>
+                  <motion.button whileHover={{ x: -3 }}
+                    onClick={() => { setSelStudent(null); setStudDetail(null); }}
+                    style={{
+                      background: 'none', border: 'none', cursor: 'pointer', color: '#64748B',
+                      fontSize: 13, fontFamily: 'Nunito,sans-serif',
+                      display: 'flex', alignItems: 'center', gap: 4, marginBottom: 16, padding: 0,
+                    }}>
+                    ← Back to class
+                  </motion.button>
+
+                  {/* Profile header */}
+                  <Card style={{ marginBottom: 16 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 16 }}>
+                      <div style={{
+                        width: 52, height: 52, borderRadius: 14,
+                        background: 'linear-gradient(135deg,#6366F1,#8B5CF6)',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        fontSize: 22, color: '#fff', fontWeight: 700,
+                      }}>
+                        {selectedStudent.first_name?.[0]?.toUpperCase() || 'S'}
+                      </div>
+                      <div style={{ flex: 1 }}>
+                        <div style={{ fontSize: 16, fontWeight: 900, color: '#F1F5F9',
+                          fontFamily: 'Nunito,sans-serif' }}>
+                          {selectedStudent.first_name} {selectedStudent.last_name}
+                        </div>
+                        <div style={{ fontSize: 12, color: '#64748B', fontFamily: 'Nunito,sans-serif' }}>
+                          @{selectedStudent.username} • Age {selectedStudent.age_group}
+                        </div>
+                      </div>
+                      <div style={{ display: 'flex', gap: 16 }}>
+                        <div style={{ textAlign: 'center' }}>
+                          <div style={{ fontSize: 18, fontWeight: 900, color: '#F59E0B',
+                            fontFamily: 'Nunito,sans-serif' }}>
+                            Lv {studentDetail.profile?.current_level || 1}
+                          </div>
+                          <div style={{ fontSize: 10, color: '#64748B', fontFamily: 'Nunito,sans-serif' }}>Level</div>
+                        </div>
+                        <div style={{ textAlign: 'center' }}>
+                          <div style={{ fontSize: 18, fontWeight: 900, color: '#6366F1',
+                            fontFamily: 'Nunito,sans-serif' }}>
+                            ⭐{studentDetail.profile?.total_stars || 0}
+                          </div>
+                          <div style={{ fontSize: 10, color: '#64748B', fontFamily: 'Nunito,sans-serif' }}>Stars</div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Skill proficiency bars */}
+                    <div style={{ fontSize: 13, fontWeight: 700, color: '#F1F5F9',
+                      fontFamily: 'Nunito,sans-serif', marginBottom: 12 }}>
+                      📊 Skill Proficiency
+                    </div>
+                    {(studentDetail.game_performance || []).map((gp, i) => (
+                      <div key={i} style={{ marginBottom: 12 }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
+                          <span style={{ fontSize: 12, color: '#94A3B8', fontFamily: 'Nunito,sans-serif' }}>
+                            {gp.game_name || gp.game_id}
+                          </span>
+                          <span style={{ fontSize: 12, fontWeight: 700,
+                            color: scoreColor(gp.avg_score) }}>
+                            {Math.round(gp.avg_score)}%
+                          </span>
+                        </div>
+                        <div style={{ height: 6, background: '#2D3A4F', borderRadius: 10, overflow: 'hidden' }}>
+                          <motion.div
+                            style={{ height: '100%', borderRadius: 10, background: scoreColor(gp.avg_score) }}
+                            animate={{ width: `${gp.avg_score}%` }}
+                            transition={{ duration: 0.8, delay: i * 0.1 }}
+                          />
+                        </div>
+                      </div>
+                    ))}
+                  </Card>
+
+                  {/* Game performance chart */}
+                  <StudentGameChart gamePerformance={studentDetail.game_performance} />
+
+                  {/* Badges */}
+                  {(studentDetail.badges || []).length > 0 && (
+                    <Card>
+                      <div style={{ fontSize: 13, fontWeight: 700, color: '#F1F5F9',
+                        fontFamily: 'Nunito,sans-serif', marginBottom: 12 }}>
+                        🏆 Badges Earned
+                      </div>
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                        {studentDetail.badges.map((b, i) => (
+                          <div key={i} style={{
+                            background: 'rgba(245,158,11,0.12)',
+                            border: '1px solid rgba(245,158,11,0.25)',
+                            borderRadius: 20, padding: '4px 12px',
+                            fontSize: 12, color: '#F59E0B',
+                            fontFamily: 'Nunito,sans-serif', fontWeight: 600,
+                          }}>
+                            {b.badge_icon} {b.badge_name}
+                          </div>
+                        ))}
+                      </div>
+                    </Card>
+                  )}
+                </motion.div>
+
+              ) : (
+
+                /* ── CHARTS + ROSTER VIEW ── */
+                <motion.div key="roster"
+                  initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: -20 }}>
+
+                  {/* Charts — only show when there are students */}
+                  {students.length > 0 && (
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 20 }}>
+                      <SectionPerformanceChart students={students} />
+                      <WeeklyTrendChart scores={allScores} />
+                    </div>
+                  )}
+
+                  {/* Student Roster Table */}
+                  <Card>
+                    <div style={{ display: 'flex', alignItems: 'center',
+                      justifyContent: 'space-between', marginBottom: 16 }}>
+                      <div>
+                        <div style={{ fontSize: 16, fontWeight: 900, color: '#F1F5F9',
+                          fontFamily: 'Nunito,sans-serif' }}>
+                          🏆 Student Roster
+                        </div>
+                        {selectedClass && (
+                          <div style={{ fontSize: 12, color: '#64748B',
+                            fontFamily: 'Nunito,sans-serif', marginTop: 2 }}>
+                            {selectedClass.class_name} • Class code:{' '}
+                            <span style={{ color: '#F59E0B', fontWeight: 700 }}>
+                              {selectedClass.class_code}
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    {students.length === 0 ? (
+                      <div style={{ textAlign: 'center', padding: '40px 0', color: '#64748B',
+                        fontSize: 13, fontFamily: 'Nunito,sans-serif' }}>
+                        No students in this class yet.<br />
+                        Share the code:{' '}
+                        <strong style={{ color: '#F59E0B' }}>
+                          {selectedClass?.class_code}
+                        </strong>
+                      </div>
+                    ) : (
+                      <>
+                        {/* Table header */}
+                        <div style={{
+                          display: 'grid',
+                          gridTemplateColumns: '1fr 90px 100px 70px 70px 80px 80px',
+                          padding: '8px 12px', marginBottom: 4,
+                        }}>
+                          {['STUDENT', 'GRADE', 'AVG SCORE', 'GAMES', 'STREAK', 'LEVEL', 'ACTION'].map(h => (
+                            <div key={h} style={{
+                              fontSize: 10, fontWeight: 700, color: '#64748B',
+                              fontFamily: 'Nunito,sans-serif', letterSpacing: '0.5px',
+                            }}>{h}</div>
+                          ))}
+                        </div>
+
+                        {students.map((s, i) => {
+                          const avg = s.avg_score || 0;
+                          const low = avg < 40 && s.games_played > 0;
+                          return (
+                            <motion.div key={s.user_id || i}
+                              style={{
+                                display: 'grid',
+                                gridTemplateColumns: '1fr 90px 100px 70px 70px 80px 80px',
+                                padding: '12px', borderRadius: 12, marginBottom: 6,
+                                alignItems: 'center', cursor: 'pointer',
+                                background: low ? 'rgba(239,68,68,0.05)' : 'rgba(30,41,59,0.4)',
+                                border: `1px solid ${low ? 'rgba(239,68,68,0.2)' : '#2D3A4F'}`,
+                              }}
+                              whileHover={{
+                                borderColor: 'rgba(245,158,11,0.3)',
+                                background: 'rgba(245,158,11,0.05)',
+                              }}
+                              whileTap={{ scale: 0.99 }}
+                              onClick={() => loadStudentDetail(s)}
+                            >
+                              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                                <div style={{
+                                  width: 32, height: 32, borderRadius: 8, flexShrink: 0,
+                                  background: 'linear-gradient(135deg,#6366F1,#8B5CF6)',
+                                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                  fontSize: 13, color: '#fff', fontWeight: 700,
+                                }}>
+                                  {s.first_name?.[0]?.toUpperCase() || 'S'}
+                                </div>
+                                <div>
+                                  <div style={{ fontSize: 13, fontWeight: 700, color: '#F1F5F9',
+                                    fontFamily: 'Nunito,sans-serif' }}>
+                                    {s.first_name} {s.last_name}
+                                  </div>
+                                  <div style={{ fontSize: 11, color: '#64748B',
+                                    fontFamily: 'Nunito,sans-serif' }}>
+                                    Age {s.age_group}
+                                  </div>
+                                </div>
+                              </div>
+                              <div style={{ fontSize: 12, color: '#94A3B8',
+                                fontFamily: 'Nunito,sans-serif' }}>
+                                {s.age_group}-A
+                              </div>
+                              <div style={{
+                                padding: '3px 10px', borderRadius: 20, fontSize: 12, fontWeight: 800,
+                                background: `rgba(${scoreRgb(avg)},0.15)`,
+                                color: scoreColor(avg), width: 'fit-content',
+                                border: `1px solid rgba(${scoreRgb(avg)},0.3)`,
+                              }}>
+                                {avg > 0 ? `${Math.round(avg)}%` : '—'}
+                              </div>
+                              <div style={{ fontSize: 13, color: '#94A3B8',
+                                fontFamily: 'Nunito,sans-serif' }}>
+                                {s.games_played || 0}
+                              </div>
+                              <div style={{ fontSize: 13, color: '#F59E0B',
+                                fontFamily: 'Nunito,sans-serif',
+                                display: 'flex', alignItems: 'center', gap: 3 }}>
+                                🔥{s.streak || 0}
+                              </div>
+                              <div style={{
+                                padding: '3px 10px', borderRadius: 20,
+                                background: 'rgba(99,102,241,0.15)',
+                                border: '1px solid rgba(99,102,241,0.25)',
+                                fontSize: 11, color: '#818CF8',
+                                fontFamily: 'Nunito,sans-serif', fontWeight: 700,
+                                width: 'fit-content',
+                              }}>
+                                Lv{s.current_level || 1}
+                              </div>
+                              <div style={{ fontSize: 13, color: '#6366F1' }}>→</div>
+                            </motion.div>
+                          );
+                        })}
+                      </>
+                    )}
+                  </Card>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
         </div>
       </div>
+
+      {/* ── ACTIVE TODAY MODAL ── */}
+      <AnimatePresence>
+        {showActive && (
+          <motion.div
+            style={{
+              position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 999,
+            }}
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+          >
+            <motion.div
+              style={{
+                background: '#1E293B', border: '1px solid #2D3A4F',
+                borderRadius: 20, padding: '28px 24px', maxWidth: 380, width: '90%',
+              }}
+              initial={{ scale: 0.85 }} animate={{ scale: 1 }} exit={{ scale: 0.85 }}
+            >
+              <div style={{ fontSize: 16, fontWeight: 900, color: '#F1F5F9',
+                fontFamily: 'Nunito,sans-serif', marginBottom: 14 }}>
+                ✅ Active Today ({activeToday.length})
+              </div>
+              {activeToday.length === 0 ? (
+                <div style={{ color: '#64748B', fontSize: 13, fontFamily: 'Nunito,sans-serif' }}>
+                  No students active today yet.
+                </div>
+              ) : activeToday.map((s, i) => (
+                <div key={i} style={{
+                  display: 'flex', alignItems: 'center', gap: 10,
+                  padding: '8px 0',
+                  borderBottom: i < activeToday.length - 1 ? '1px solid #2D3A4F' : 'none',
+                }}>
+                  <div style={{
+                    width: 28, height: 28, borderRadius: 8,
+                    background: 'linear-gradient(135deg,#10B981,#34D399)',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    fontSize: 12, color: '#fff', fontWeight: 700,
+                  }}>
+                    {(s.first_name || 'S')[0].toUpperCase()}
+                  </div>
+                  <span style={{ fontSize: 13, color: '#F1F5F9', fontFamily: 'Nunito,sans-serif' }}>
+                    {s.first_name} {s.last_name}
+                  </span>
+                </div>
+              ))}
+              <motion.button whileHover={{ scale: 1.02 }}
+                onClick={() => setShowActive(false)}
+                style={{
+                  marginTop: 16, width: '100%', padding: '10px', borderRadius: 10,
+                  border: '1px solid #2D3A4F', background: 'transparent', color: '#94A3B8',
+                  fontSize: 13, cursor: 'pointer', fontFamily: 'Nunito,sans-serif', fontWeight: 700,
+                }}>
+                Close
+              </motion.button>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

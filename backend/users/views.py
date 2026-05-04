@@ -3,6 +3,7 @@ from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.response import Response
 from django.contrib.auth import get_user_model, authenticate
 from django.core.mail import send_mail
+from django.http import JsonResponse
 from django.conf import settings
 from .models import (
     get_db,
@@ -490,3 +491,5 @@ def platform_stats_view(request):
         'total_badges': total_badges,     'total_classes': total_classes,
         'today_scores': today_scores,
     })
+def health_check(request):
+    return JsonResponse({"status": "ok", "message": "FunLearn AI backend is running"})
