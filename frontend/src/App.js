@@ -15,25 +15,25 @@ import ParentDashboard  from './pages/parent/ParentDashboard';
 import AdminDashboard   from './pages/admin/AdminDashboard';
 
 // Age 3-6 Games
-import ColorsGame    from './games/ColorsGame';
-import ShapesGame    from './games/ShapesGame';
-import AlphabetGame  from './games/AlphabetGame';
-import NumberBuddyGame   from './games/NumberBuddyGame';
-import AnimalSoundsGame  from './games/AnimalSoundsGame';
+import ColorsGame        from './pages/games/ColorExplorer';
+import ShapesGame        from './pages/games/ShapeSorter';
+import AlphabetGame      from './pages/games/AlphabetGame';
+import NumberBuddyGame   from './pages/games/NumberBuddyGame';
+import AnimalSoundsGame  from './pages/games/AnimalSoundsGame';
 
 // Age 6-9 Games
-import AnimalsGame   from './games/AnimalsGame';
-import CountingGame  from './games/CountingGame';
-import WordsGame     from './games/WordsGame';
-import SentenceMakerGame from './games/SentenceMakerGame';
-import PatternQuestGame  from './games/PatternQuestGame';
+import AnimalsGame       from './pages/games/AnimalSounds';
+import CountingGame      from './pages/games/CountingStars';
+import WordsGame         from './pages/games/WordBuilder';
+import SentenceMakerGame from './pages/games/SentenceMakerGame';
+import PatternQuestGame  from './pages/games/PatternQuestGame';
 
 // Age 9-12 Games
-import MathGame      from './games/MathGame';
-import SpellingGame  from './games/SpellingGame';
-import MemoryGame    from './games/MemoryGame';
-import LogicGridGame     from './games/LogicGridGame';
-import SpeedEquationsGame from './games/SpeedEquationsGame';
+import MathGame          from './pages/games/MathChallenge';
+import SpellingGame      from './pages/games/SpellItRight';
+import MemoryGame        from './pages/games/MemoryFlip';
+import LogicGridGame     from './pages/games/LogicGridGame';
+import SpeedEquationsGame from './pages/games/SpeedEquationsGame';
 
 // ── ROUTE GUARDS ──────────────────────────────────────────────────
 function PrivateRoute({ children, role }) {
