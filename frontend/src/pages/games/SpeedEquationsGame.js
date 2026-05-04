@@ -1,9 +1,9 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { submitScore } from '../services/api';
+import { submitScore } from '../../services/api';
 import useStageProgress from '../hooks/useStageProgress';
-import { useAuth } from '../../context/AuthContext';
+import { useAuth } from '../../../context/AuthContext';
 
 /**
  * Generates a random equation based on the current stage difficulty.
