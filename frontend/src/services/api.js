@@ -63,4 +63,4 @@ export const getAllGamesAdmin  = ()     => api.get('/api/games/all/');
 export const toggleGame       = (data) => api.post('/api/games/toggle/', data);
 export const getActiveToday   = (code) => api.get(`/api/games/active-today/?class_code=${code}`);
 
-export default api;
+export const getChildProgress = (username) => api.get(`/api/users/child-progress/?username=` + username);`nexport const getAIProgressReport = (username) => api.get(`/api/ai/progress-report/?username=` + username);`nexport const addChild = (data) => api.post(`/api/users/add-child/`, data);`nexport const getStudentsInClass = (code) => api.get(`/api/users/class-detail/` + code + `/`);`nexport const getStudentDetailedProfile = (sid) => api.get(`/api/users/student-detail/?student_id=` + sid);`nexport const activeTodayStudents = (code) => api.get(`/api/games/active-today/?class_code=` + code);`nexport const createTeacherClass = (data) => api.post(`/api/users/create-class/`, data);`n`nexport default api;
