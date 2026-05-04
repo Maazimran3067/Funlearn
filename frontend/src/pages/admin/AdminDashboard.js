@@ -9,7 +9,7 @@ import {
 } from 'recharts';
 import {
   getProfile, getPlatformStats, getAllUsers, getAllGamesAdmin,
-  toggleUserActive, toggleGame, getAllClasses, trainAIModel
+  toggleUser, toggleGame, getAllClasses, trainAIModel
 } from '../../services/api';
 
 // ── SHARED CARD ───────────────────────────────────────────────
@@ -251,7 +251,7 @@ export default function AdminDashboard() {
 
   const handleToggleUser = async (userId, current) => {
     try {
-      await toggleUserActive({ user_id: userId, is_active: !current });
+      await toggleUser({ user_id: userId, is_active: !current });
       setUsers(p => p.map(u => u.user_id === userId ? { ...u, is_active: !current } : u));
     } catch {}
   };
