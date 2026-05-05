@@ -5,14 +5,17 @@ import { AuthProvider, useAuth } from './context/AuthContext';
 // Pages
 import LoginPage    from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
-import HomePage from './pages/HomePage';
-
+import HomePage     from './pages/HomePage';
 
 // Dashboards
 import StudentDashboard from './pages/student/StudentDashboard';
 import TeacherDashboard from './pages/teacher/TeacherDashboard';
 import ParentDashboard  from './pages/parent/ParentDashboard';
 import AdminDashboard   from './pages/admin/AdminDashboard';
+
+// Student sub-pages
+import StudentProfile  from './pages/student/StudentProfile';
+import StudentProgress from './pages/student/StudentProgress';
 
 // Age 3-6 Games
 import ColorsGame        from './pages/games/ColorExplorer';
@@ -29,19 +32,22 @@ import SentenceMakerGame from './pages/games/SentenceMakerGame';
 import PatternQuestGame  from './pages/games/PatternQuestGame';
 
 // Age 9-12 Games
-import MathGame          from './pages/games/MathChallenge';
-import SpellingGame      from './pages/games/SpellItRight';
-import MemoryGame        from './pages/games/MemoryFlip';
-import LogicGridGame     from './pages/games/LogicGridGame';
+import MathGame           from './pages/games/MathChallenge';
+import SpellingGame       from './pages/games/SpellItRight';
+import MemoryGame         from './pages/games/MemoryFlip';
+import LogicGridGame      from './pages/games/LogicGridGame';
 import SpeedEquationsGame from './pages/games/SpeedEquationsGame';
 
 // ── ROUTE GUARDS ──────────────────────────────────────────────────
 function PrivateRoute({ children, role }) {
   const { user, loading } = useAuth();
   if (loading) return (
-    <div className="loading-screen">
+    <div className="loading-screen" style={{ 
+      minHeight: '100vh', background: '#0B1120', display: 'flex', 
+      flexDirection: 'column', alignItems: 'center', justifyContent: 'center' 
+    }}>
       <div style={{ fontSize: 40 }}>🎓</div>
-      <p>Loading FunLearn AI...</p>
+      <p style={{ color: '#94A3B8', fontFamily: 'Nunito, sans-serif' }}>Loading FunLearn AI...</p>
     </div>
   );
   if (!user) return <Navigate to="/login" replace />;
@@ -52,9 +58,12 @@ function PrivateRoute({ children, role }) {
 function PublicRoute({ children }) {
   const { user, loading } = useAuth();
   if (loading) return (
-    <div className="loading-screen">
+    <div className="loading-screen" style={{ 
+      minHeight: '100vh', background: '#0B1120', display: 'flex', 
+      flexDirection: 'column', alignItems: 'center', justifyContent: 'center' 
+    }}>
       <div style={{ fontSize: 40 }}>🎓</div>
-      <p>Loading...</p>
+      <p style={{ color: '#94A3B8', fontFamily: 'Nunito, sans-serif' }}>Loading...</p>
     </div>
   );
   if (user) {
@@ -77,32 +86,36 @@ export default function App() {
         <Routes>
 
           {/* Public */}
-          <Route path="/login"    element={<PublicRoute><LoginPage /></PublicRoute>} />
+          <Route path="/"        element={<HomePage />} />
+          <Route path="/home"    element={<HomePage />} />
+          <Route path="/login"   element={<PublicRoute><LoginPage /></PublicRoute>} />
           <Route path="/register" element={<PublicRoute><RegisterPage /></PublicRoute>} />
-          <Route path="/" element={<HomePage />} />
-          <Route path="/home" element={<HomePage />} />
 
-          {/* Student */}
+          {/* ── Student ── */}
           <Route path="/student/dashboard" element={
             <PrivateRoute role="student"><StudentDashboard /></PrivateRoute>} />
+          <Route path="/student/profile" element={
+            <PrivateRoute role="student"><StudentProfile /></PrivateRoute>} />
+          <Route path="/student/progress" element={
+            <PrivateRoute role="student"><StudentProgress /></PrivateRoute>} />
 
-          {/* Teacher */}
+          {/* ── Teacher ── */}
           <Route path="/teacher/dashboard" element={
             <PrivateRoute role="teacher"><TeacherDashboard /></PrivateRoute>} />
 
-          {/* Parent */}
+          {/* ── Parent ── */}
           <Route path="/parent/dashboard" element={
             <PrivateRoute role="parent"><ParentDashboard /></PrivateRoute>} />
 
-          {/* Admin */}
+          {/* ── Admin ── */}
           <Route path="/admin/dashboard" element={
             <PrivateRoute role="admin"><AdminDashboard /></PrivateRoute>} />
 
           {/* ── Age 3-6 Games ── */}
-          <Route path="/games/colors"   element={<PrivateRoute><ColorsGame /></PrivateRoute>} />
-          <Route path="/games/shapes"   element={<PrivateRoute><ShapesGame /></PrivateRoute>} />
-          <Route path="/games/alphabet" element={<PrivateRoute><AlphabetGame /></PrivateRoute>} />
-          <Route path="/games/numbers"  element={<PrivateRoute><NumberBuddyGame /></PrivateRoute>} />
+          <Route path="/games/colors"       element={<PrivateRoute><ColorsGame /></PrivateRoute>} />
+          <Route path="/games/shapes"       element={<PrivateRoute><ShapesGame /></PrivateRoute>} />
+          <Route path="/games/alphabet"     element={<PrivateRoute><AlphabetGame /></PrivateRoute>} />
+          <Route path="/games/numbers"      element={<PrivateRoute><NumberBuddyGame /></PrivateRoute>} />
           <Route path="/games/animalsounds" element={<PrivateRoute><AnimalSoundsGame /></PrivateRoute>} />
 
           {/* ── Age 6-9 Games ── */}
