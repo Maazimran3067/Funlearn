@@ -22,9 +22,10 @@ const rgbOf = (c) =>
   c === '#F59E0B' ? '245,158,11' : '239,68,68';
 
 // ─────────────────────────────────────────────────────────────────
-// IMPORTANT: Inp and PwStr are OUTSIDE RegisterPage on purpose.
-// If they were inside, every keystroke would remount the input
-// and lose focus. Keep them here — do not move them inside.
+// ALL COMPONENTS ARE OUTSIDE RegisterPage ON PURPOSE.
+// Defining components inside a parent causes them to be treated as
+// brand-new component types on every render, which remounts inputs,
+// loses focus, and triggers spurious form submissions on each keystroke.
 // ─────────────────────────────────────────────────────────────────
 
 function Inp({ label, type = 'text', placeholder, value, onChange, required, color, right }) {
@@ -89,6 +90,132 @@ function PwStr({ pw }) {
   );
 }
 
+function Wrap({ children, role }) {
+  return (
+    <div style={{
+      minHeight: '100vh', display: 'flex', background: '#0B1120',
+      alignItems: 'center', justifyContent: 'center',
+      padding: 24, position: 'relative', overflow: 'hidden'
+    }}>
+      <div style={{
+        position: 'absolute', inset: 0, opacity: 0.03,
+        backgroundImage: 'linear-gradient(#4F6080 1px,transparent 1px),linear-gradient(90deg,#4F6080 1px,transparent 1px)',
+        backgroundSize: '48px 48px', pointerEvents: 'none'
+      }} />
+      <motion.div
+        key={role.id}
+        style={{
+          position: 'absolute', width: 600, height: 600, borderRadius: '50%',
+          background: `radial-gradient(circle,rgba(${rgbOf(role.color)},0.1) 0%,transparent 70%)`,
+          top: -200, right: -100, pointerEvents: 'none'
+        }}
+        animate={{ scale: [1, 1.1, 1] }}
+        transition={{ duration: 9, repeat: Infinity }}
+      />
+      <motion.div
+        style={{
+          width: '100%', maxWidth: 480,
+          background: 'rgba(15,23,42,0.95)',
+          border: '1px solid #1E2D45', borderRadius: 20, padding: '32px 28px',
+          backdropFilter: 'blur(20px)',
+          boxShadow: `0 20px 60px rgba(0,0,0,0.5), 0 0 40px rgba(${rgbOf(role.color)},0.08)`
+        }}
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.35 }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <div style={{
+              width: 36, height: 36, borderRadius: 10,
+              background: 'linear-gradient(135deg,#6366F1,#8B5CF6)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18
+            }}>🎓</div>
+            <span style={{ fontSize: 18, fontWeight: 900, fontFamily: 'Nunito,sans-serif' }}>
+              <span style={{ color: '#6366F1' }}>Fun</span>
+              <span style={{ color: '#F59E0B' }}>Learn</span>
+              <span style={{ color: '#F1F5F9' }}>AI</span>
+            </span>
+          </div>
+          <Link to="/login" style={{
+            fontSize: 12, color: '#64748B',
+            fontFamily: 'Nunito,sans-serif', textDecoration: 'none'
+          }}>
+            Sign in →
+          </Link>
+        </div>
+        {children}
+      </motion.div>
+    </div>
+  );
+}
+
+function Alerts({ err, ok }) {
+  return (
+    <AnimatePresence>
+      {err && (
+        <motion.div
+          key="err"
+          initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }}
+          exit={{ opacity: 0, height: 0 }}
+          style={{
+            background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.3)',
+            borderRadius: 10, padding: '10px 14px', marginBottom: 12,
+            color: '#FCA5A5', fontSize: 13, fontFamily: 'Nunito,sans-serif',
+            display: 'flex', gap: 8, alignItems: 'center'
+          }}>
+          ⚠️ {err}
+        </motion.div>
+      )}
+      {ok && (
+        <motion.div
+          key="ok"
+          initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }}
+          exit={{ opacity: 0, height: 0 }}
+          style={{
+            background: 'rgba(16,185,129,0.1)', border: '1px solid rgba(16,185,129,0.3)',
+            borderRadius: 10, padding: '10px 14px', marginBottom: 12,
+            color: '#6EE7B7', fontSize: 13, fontFamily: 'Nunito,sans-serif',
+            display: 'flex', gap: 8, alignItems: 'center'
+          }}>
+          ✅ {ok}
+        </motion.div>
+      )}
+    </AnimatePresence>
+  );
+}
+
+function Btn({ label, onClick, disabled, load, role }) {
+  return (
+    <motion.button
+      type={onClick ? 'button' : 'submit'}
+      onClick={onClick}
+      disabled={disabled || load}
+      style={{
+        width: '100%', padding: '13px', borderRadius: 12, border: 'none', marginTop: 8,
+        background: (disabled || load) ? '#1E293B' : `linear-gradient(135deg,${role.color},${role.color}BB)`,
+        color: (disabled || load) ? '#64748B' : '#fff',
+        fontSize: 14, fontWeight: 800,
+        cursor: (disabled || load) ? 'not-allowed' : 'pointer',
+        fontFamily: 'Nunito,sans-serif',
+        boxShadow: (disabled || load) ? 'none' : `0 4px 20px ${role.glow}`,
+        transition: 'all 0.2s'
+      }}
+      whileHover={!disabled && !load ? { scale: 1.02, y: -1 } : {}}
+      whileTap={!disabled && !load ? { scale: 0.98 } : {}}
+    >
+      {load ? (
+        <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+          <motion.span animate={{ rotate: 360 }}
+            transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
+            style={{ display: 'inline-block' }}>⏳</motion.span>
+          Please wait...
+        </span>
+      ) : label}
+    </motion.button>
+  );
+}
+
 // ─────────────────────────────────────────────────────────────────
 // MAIN COMPONENT
 // ─────────────────────────────────────────────────────────────────
@@ -102,8 +229,8 @@ export default function RegisterPage() {
   const [ok,    setOk]    = useState('');
   const [email, setEmail] = useState('');
   const [otp,   setOtp]   = useState('');
-  const [showPw,    setShowPw]    = useState(false);
-  const [showConf,  setShowConf]  = useState(false);
+  const [showPw,   setShowPw]   = useState(false);
+  const [showConf, setShowConf] = useState(false);
   const [form,  setForm]  = useState({
     username: '', password: '', confirm_password: '',
     first_name: '', last_name: '', age_group: '',
@@ -165,133 +292,9 @@ export default function RegisterPage() {
     } finally { setLoad(false); }
   };
 
-  // ── SHARED WRAPPER ──────────────────────────────────────────
-  const Wrap = ({ children }) => (
-    <div style={{
-      minHeight: '100vh', display: 'flex', background: '#0B1120',
-      alignItems: 'center', justifyContent: 'center',
-      padding: 24, position: 'relative', overflow: 'hidden'
-    }}>
-      <div style={{
-        position: 'absolute', inset: 0, opacity: 0.03,
-        backgroundImage: 'linear-gradient(#4F6080 1px,transparent 1px),linear-gradient(90deg,#4F6080 1px,transparent 1px)',
-        backgroundSize: '48px 48px', pointerEvents: 'none'
-      }} />
-      <motion.div
-        key={role.id}
-        style={{
-          position: 'absolute', width: 600, height: 600, borderRadius: '50%',
-          background: `radial-gradient(circle,rgba(${rgbOf(role.color)},0.1) 0%,transparent 70%)`,
-          top: -200, right: -100, pointerEvents: 'none'
-        }}
-        animate={{ scale: [1, 1.1, 1] }}
-        transition={{ duration: 9, repeat: Infinity }}
-      />
-      <motion.div
-        style={{
-          width: '100%', maxWidth: 480,
-          background: 'rgba(15,23,42,0.95)',
-          border: '1px solid #1E2D45', borderRadius: 20, padding: '32px 28px',
-          backdropFilter: 'blur(20px)',
-          boxShadow: `0 20px 60px rgba(0,0,0,0.5), 0 0 40px rgba(${rgbOf(role.color)},0.08)`
-        }}
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.35 }}
-      >
-        {/* Logo header */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <div style={{
-              width: 36, height: 36, borderRadius: 10,
-              background: 'linear-gradient(135deg,#6366F1,#8B5CF6)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18
-            }}>🎓</div>
-            <span style={{ fontSize: 18, fontWeight: 900, fontFamily: 'Nunito,sans-serif' }}>
-              <span style={{ color: '#6366F1' }}>Fun</span>
-              <span style={{ color: '#F59E0B' }}>Learn</span>
-              <span style={{ color: '#F1F5F9' }}>AI</span>
-            </span>
-          </div>
-          <Link to="/login" style={{
-            fontSize: 12, color: '#64748B',
-            fontFamily: 'Nunito,sans-serif', textDecoration: 'none'
-          }}>
-            Sign in →
-          </Link>
-        </div>
-        {children}
-      </motion.div>
-    </div>
-  );
-
-  // ── ALERTS ──────────────────────────────────────────────────
-  const Alerts = () => (
-    <AnimatePresence>
-      {err && (
-        <motion.div
-          key="err"
-          initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }}
-          exit={{ opacity: 0, height: 0 }}
-          style={{
-            background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.3)',
-            borderRadius: 10, padding: '10px 14px', marginBottom: 12,
-            color: '#FCA5A5', fontSize: 13, fontFamily: 'Nunito,sans-serif',
-            display: 'flex', gap: 8, alignItems: 'center'
-          }}>
-          ⚠️ {err}
-        </motion.div>
-      )}
-      {ok && (
-        <motion.div
-          key="ok"
-          initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }}
-          exit={{ opacity: 0, height: 0 }}
-          style={{
-            background: 'rgba(16,185,129,0.1)', border: '1px solid rgba(16,185,129,0.3)',
-            borderRadius: 10, padding: '10px 14px', marginBottom: 12,
-            color: '#6EE7B7', fontSize: 13, fontFamily: 'Nunito,sans-serif',
-            display: 'flex', gap: 8, alignItems: 'center'
-          }}>
-          ✅ {ok}
-        </motion.div>
-      )}
-    </AnimatePresence>
-  );
-
-  // ── SUBMIT BUTTON ────────────────────────────────────────────
-  const Btn = ({ label, onClick, disabled }) => (
-    <motion.button
-      type={onClick ? 'button' : 'submit'}
-      onClick={onClick}
-      disabled={disabled || load}
-      style={{
-        width: '100%', padding: '13px', borderRadius: 12, border: 'none', marginTop: 8,
-        background: (disabled || load) ? '#1E293B' : `linear-gradient(135deg,${role.color},${role.color}BB)`,
-        color: (disabled || load) ? '#64748B' : '#fff',
-        fontSize: 14, fontWeight: 800,
-        cursor: (disabled || load) ? 'not-allowed' : 'pointer',
-        fontFamily: 'Nunito,sans-serif',
-        boxShadow: (disabled || load) ? 'none' : `0 4px 20px ${role.glow}`,
-        transition: 'all 0.2s'
-      }}
-      whileHover={!disabled && !load ? { scale: 1.02, y: -1 } : {}}
-      whileTap={!disabled && !load ? { scale: 0.98 } : {}}
-    >
-      {load ? (
-        <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
-          <motion.span animate={{ rotate: 360 }}
-            transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
-            style={{ display: 'inline-block' }}>⏳</motion.span>
-          Please wait...
-        </span>
-      ) : label}
-    </motion.button>
-  );
-
   // ── STEP 1: CHOOSE ROLE ──────────────────────────────────────
   if (step === 1) return (
-    <Wrap>
+    <Wrap role={role}>
       <h2 style={{ fontSize: 22, fontWeight: 900, color: '#F1F5F9', fontFamily: 'Nunito,sans-serif', margin: '0 0 6px' }}>
         Create Account
       </h2>
@@ -322,17 +325,19 @@ export default function RegisterPage() {
           </motion.div>
         ))}
       </div>
-      <Alerts />
+      <Alerts err={err} ok={ok} />
       <Btn
         label={`Continue as ${role.label} ${role.emoji}`}
         onClick={() => { setStep(role.id === 'student' ? 4 : 2); setErr(''); }}
+        load={load}
+        role={role}
       />
     </Wrap>
   );
 
   // ── STEP 2: ENTER EMAIL ──────────────────────────────────────
   if (step === 2) return (
-    <Wrap>
+    <Wrap role={role}>
       <motion.button onClick={() => setStep(1)} whileHover={{ x: -2 }}
         style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#64748B', fontSize: 12, fontFamily: 'Nunito,sans-serif', display: 'flex', alignItems: 'center', gap: 4, marginBottom: 18, padding: 0 }}>
         ← Back
@@ -353,20 +358,20 @@ export default function RegisterPage() {
           </div>
         </div>
       </div>
-      <Alerts />
+      <Alerts err={err} ok={ok} />
       <Inp label="📧 YOUR EMAIL ADDRESS" type="email" placeholder="your@email.com"
         value={email} onChange={e => { setEmail(e.target.value); setErr(''); }}
         required color={role.color} />
       <p style={{ fontSize: 11, color: '#64748B', fontFamily: 'Nunito,sans-serif', marginBottom: 4 }}>
         We'll send a 6-digit verification code to this email.
       </p>
-      <Btn label="📧 Send Verification Code" onClick={sendCode} />
+      <Btn label="📧 Send Verification Code" onClick={sendCode} load={load} role={role} />
     </Wrap>
   );
 
   // ── STEP 3: ENTER OTP ────────────────────────────────────────
   if (step === 3) return (
-    <Wrap>
+    <Wrap role={role}>
       <motion.button onClick={() => { setStep(2); setOtp(''); setOk(''); setErr(''); }} whileHover={{ x: -2 }}
         style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#64748B', fontSize: 12, fontFamily: 'Nunito,sans-serif', display: 'flex', alignItems: 'center', gap: 4, marginBottom: 18, padding: 0 }}>
         ← Back
@@ -382,7 +387,7 @@ export default function RegisterPage() {
           Code sent to <strong style={{ color: '#F1F5F9' }}>{email}</strong>
         </div>
       </div>
-      <Alerts />
+      <Alerts err={err} ok={ok} />
       <div style={{ marginBottom: 14 }}>
         <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: '#94A3B8', marginBottom: 8, fontFamily: 'Nunito,sans-serif', letterSpacing: '0.8px' }}>
           🔢 ENTER 6-DIGIT CODE
@@ -403,7 +408,7 @@ export default function RegisterPage() {
           }}
         />
       </div>
-      <Btn label="✅ Verify Code" onClick={verifyCode} disabled={otp.length !== 6} />
+      <Btn label="✅ Verify Code" onClick={verifyCode} disabled={otp.length !== 6} load={load} role={role} />
       <motion.button type="button" whileHover={{ scale: 1.01 }}
         onClick={() => { setStep(2); setOtp(''); setOk(''); setErr(''); }}
         style={{
@@ -419,13 +424,12 @@ export default function RegisterPage() {
 
   // ── STEP 4: FULL FORM ────────────────────────────────────────
   return (
-    <Wrap>
+    <Wrap role={role}>
       <motion.button onClick={() => { setStep(needOTP ? 3 : 1); setErr(''); }} whileHover={{ x: -2 }}
         style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#64748B', fontSize: 12, fontFamily: 'Nunito,sans-serif', display: 'flex', alignItems: 'center', gap: 4, marginBottom: 16, padding: 0 }}>
         ← Back
       </motion.button>
 
-      {/* Progress bar */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 18 }}>
         {(needOTP ? [1, 2, 3] : [1, 2]).map((_, i) => (
           <div key={i} style={{ flex: 1, height: 3, borderRadius: 3, background: role.color }} />
@@ -435,7 +439,6 @@ export default function RegisterPage() {
         </span>
       </div>
 
-      {/* Role badge */}
       <div style={{
         display: 'flex', alignItems: 'center', gap: 10, marginBottom: 18,
         background: `rgba(${rgbOf(role.color)},0.08)`,
@@ -455,10 +458,9 @@ export default function RegisterPage() {
         </div>
       </div>
 
-      <Alerts />
+      <Alerts err={err} ok={ok} />
 
       <form onSubmit={submit}>
-        {/* Name row */}
         <div style={{ display: 'flex', gap: 10 }}>
           <div style={{ flex: 1 }}>
             <Inp label="FIRST NAME *" placeholder="Ali"
@@ -472,7 +474,6 @@ export default function RegisterPage() {
           </div>
         </div>
 
-        {/* Username */}
         <Inp
           label={`🎮 USERNAME *${role.id === 'student' ? ' (used to log in)' : ''}`}
           placeholder="letters, numbers, underscore"
@@ -480,7 +481,6 @@ export default function RegisterPage() {
           required color={role.color}
         />
 
-        {/* Verified email display for non-students */}
         {needOTP && (
           <div style={{ marginBottom: 14 }}>
             <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: '#94A3B8', marginBottom: 7, fontFamily: 'Nunito,sans-serif', letterSpacing: '0.8px' }}>
@@ -492,7 +492,6 @@ export default function RegisterPage() {
           </div>
         )}
 
-        {/* Password */}
         <div style={{ marginBottom: 6 }}>
           <Inp label="🔒 PASSWORD *" type={showPw ? 'text' : 'password'}
             placeholder="8+ chars, number & special char"
@@ -508,7 +507,6 @@ export default function RegisterPage() {
           <PwStr pw={form.password} />
         </div>
 
-        {/* Confirm password */}
         <div style={{ marginBottom: 4 }}>
           <Inp label="🔒 CONFIRM PASSWORD *" type={showConf ? 'text' : 'password'}
             placeholder="Repeat your password"
@@ -528,7 +526,6 @@ export default function RegisterPage() {
           )}
         </div>
 
-        {/* STUDENT extras */}
         {role.id === 'student' && (
           <>
             <div style={{ marginBottom: 14 }}>
@@ -566,14 +563,12 @@ export default function RegisterPage() {
           </>
         )}
 
-        {/* TEACHER extras */}
         {role.id === 'teacher' && (
           <Inp label="🏛️ SCHOOL NAME *" placeholder="e.g. City School Lahore"
             value={form.school_name} onChange={setF('school_name')}
             required color={role.color} />
         )}
 
-        {/* PARENT extras */}
         {role.id === 'parent' && (
           <>
             <Inp label="👧 CHILD'S USERNAME *" placeholder="Your child's exact username"
@@ -585,7 +580,6 @@ export default function RegisterPage() {
           </>
         )}
 
-        {/* ADMIN extras */}
         {role.id === 'admin' && (
           <>
             <Inp label="🔑 ADMIN SECRET KEY *" type="password"
@@ -601,6 +595,8 @@ export default function RegisterPage() {
         <Btn
           label={`Create ${role.label} Account 🎉`}
           disabled={role.id === 'student' && !form.age_group}
+          load={load}
+          role={role}
         />
       </form>
 
