@@ -129,11 +129,13 @@ def send_otp_view(request):
 
     # All ports failed
     logger.error(f'[OTP] All SMTP ports failed for {email}. Last error: {last_error}')
-    logger.error(f'EMAIL_HOST_USER set: {bool(settings.EMAIL_HOST_USER)}, PASSWORD set: {bool(settings.EMAIL_HOST_PASSWORD)}')
-    return Response(
-        {'error': 'Could not send verification email. The email server is temporarily unreachable. Please try again in a few minutes.'},
-        status=500
-    )
+    
+    # Fallback for Render Free Tier (Demo Mode)
+    # Since free tier blocks SMTP, we return the OTP in the response to unblock the FYP presentation
+    return Response({
+        'message': f'DEMO MODE: Email sending is blocked by server. Your verification code is: {otp_code}',
+        'demo_otp': otp_code
+    }, status=200)
 
 
 @api_view(['POST'])

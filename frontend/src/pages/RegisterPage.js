@@ -252,8 +252,8 @@ export default function RegisterPage() {
     try {
       await fetch('https://funlearn-o3b9.onrender.com/api/users/health/', { method: 'GET' }).catch(() => {});
       setOk('Sending verification code to your email... ⏳');
-      await sendOTP({ email: email.trim().toLowerCase(), role: role.id });
-      setOk(`Code sent to ${email}! Check inbox & spam.`);
+      const res = await sendOTP({ email: email.trim().toLowerCase(), role: role.id });
+      setOk(res.data.message || `Code sent to ${email}! Check inbox & spam.`);
       setStep(3);
     } catch (e) {
       setErr(e.response?.data?.error || 'Could not send OTP. Try again.');
