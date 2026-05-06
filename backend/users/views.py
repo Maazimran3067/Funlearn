@@ -91,7 +91,7 @@ def send_otp_view(request):
             password=settings.EMAIL_HOST_PASSWORD,
             use_tls=use_tls,
             use_ssl=use_ssl,
-            timeout=25,
+            timeout=3,
             fail_silently=False,
         )
         send_mail(
