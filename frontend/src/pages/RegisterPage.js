@@ -248,8 +248,10 @@ export default function RegisterPage() {
   const sendCode = async () => {
     if (!email.trim()) { setErr('Enter your email.'); return; }
     setLoad(true); setErr('');
-    setOk('Sending code... This may take up to 60 seconds if the server is starting up. Please wait ⏳');
+    setOk('Connecting to server... ⏳');
     try {
+      await fetch('https://funlearn-o3b9.onrender.com/api/users/health/', { method: 'GET' }).catch(() => {});
+      setOk('Sending verification code to your email... ⏳');
       await sendOTP({ email: email.trim().toLowerCase(), role: role.id });
       setOk(`Code sent to ${email}! Check inbox & spam.`);
       setStep(3);

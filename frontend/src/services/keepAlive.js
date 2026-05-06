@@ -1,12 +1,10 @@
-// Pings the backend every 10 minutes to prevent Render cold starts
-const BACKEND_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000/api';
+const BACKEND_URL = 'https://funlearn-o3b9.onrender.com';
 
 export function startKeepAlive() {
   const ping = () => {
-    // Ye request bhejega: https://funlearn-o3b9.onrender.com/health/
-    fetch(`${BACKEND_URL}/health/`, { method: 'GET' })
-      .catch(() => {}); // silently ignore errors
+    fetch(`${BACKEND_URL}/api/users/health/`, { method: 'GET' })
+      .catch(() => {});
   };
-  ping(); // ping immediately on load
-  setInterval(ping, 10 * 60 * 1000); // then every 10 minutes
+  ping();
+  setInterval(ping, 4 * 60 * 1000); // every 4 minutes (Render sleeps after 5)
 }
