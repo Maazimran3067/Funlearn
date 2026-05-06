@@ -38,8 +38,7 @@ export const loginUser      = (data) => api.post('/api/users/login/', data);
 export const getProfile     = ()     => api.get('/api/users/profile/');
 export const updateProfile  = (data) => api.patch('/api/users/update-profile/', data);
 export const changePassword = (data) => api.post('/api/users/change-password/', data);
-export const wakeServer = () => api.get('/ping/', { timeout: 15000 }).catch(() => {});
-export const sendOTP    = (data) => api.post('/api/users/send-otp/', data, { timeout: 90000 });
+export const sendOTP = (data) => api.post('/api/users/send-otp/', data, { timeout: 90000 });
 export const verifyOTP      = (data) => api.post('/api/users/verify-otp/', data, { timeout: 60000 });
 
 // ── CLASSROOM ──────────────────────────────────────────────────
