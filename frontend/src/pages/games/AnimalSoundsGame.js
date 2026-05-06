@@ -1,251 +1,285 @@
-import React, { useState, useRef } from 'react';
+// this is animalsoundgame.js
+
+import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../../context/AuthContext';
-import { submitScore } from '../../services/api';
+import { submitScore, getGameFeedback } from '../../services/api';
 import useStageProgress from '../../hooks/useStageProgress';
 
+// Age 3-6: Show animal sound, tap or say which animal makes that sound
 const ANIMALS = [
-  { name:'Cat',     emoji:'🐱', sound:'Meow',  phonetics:['cat','meow','mew'] },
-  { name:'Dog',     emoji:'🐶', sound:'Woof',  phonetics:['dog','woof','bark','ruff'] },
-  { name:'Cow',     emoji:'🐮', sound:'Moo',   phonetics:['cow','moo','mu'] },
-  { name:'Duck',    emoji:'🦆', sound:'Quack', phonetics:['duck','quack','kwak'] },
-  { name:'Lion',    emoji:'🦁', sound:'Roar',  phonetics:['lion','roar','raa'] },
-  { name:'Frog',    emoji:'🐸', sound:'Ribbit',phonetics:['frog','ribbit','ribbet'] },
-  { name:'Bee',     emoji:'🐝', sound:'Buzz',  phonetics:['bee','buzz','buz'] },
-  { name:'Elephant',emoji:'🐘', sound:'Trumpet',phonetics:['elephant','trumpet','toot'] },
+  { name:'Cat',      emoji:'🐱', sound:'Meow',    phonetics:['cat','meow','mew','miau'] },
+  { name:'Dog',      emoji:'🐶', sound:'Woof',    phonetics:['dog','woof','bark','ruff','wof'] },
+  { name:'Cow',      emoji:'🐮', sound:'Moo',     phonetics:['cow','moo','mu','mooo'] },
+  { name:'Duck',     emoji:'🦆', sound:'Quack',   phonetics:['duck','quack','kwak'] },
+  { name:'Lion',     emoji:'🦁', sound:'Roar',    phonetics:['lion','roar','raa','rawr'] },
+  { name:'Frog',     emoji:'🐸', sound:'Ribbit',  phonetics:['frog','ribbit','ribbet','ribit'] },
+  { name:'Bee',      emoji:'🐝', sound:'Buzz',    phonetics:['bee','buzz','buz','bzzz'] },
+  { name:'Elephant', emoji:'🐘', sound:'Trumpet', phonetics:['elephant','trumpet','toot','elefant'] },
 ];
 
 const STAGES = [
-  { stage:0, pool:[0,1,2,3],      label:'Stage 1' },
-  { stage:1, pool:[0,1,2,3,4],    label:'Stage 2' },
-  { stage:2, pool:[0,1,2,3,4,5],  label:'Stage 3' },
-  { stage:3, pool:[2,3,4,5,6,7],  label:'Stage 4' },
-  { stage:4, pool:[0,1,2,3,4,5,6,7], label:'Stage 5' },
+  { stage:0, pool:[0,1,2,3],          label:'Stage 1', passMark:70 },
+  { stage:1, pool:[0,1,2,3,4],        label:'Stage 2', passMark:70 },
+  { stage:2, pool:[0,1,2,3,4,5],      label:'Stage 3', passMark:70 },
+  { stage:3, pool:[2,3,4,5,6,7],      label:'Stage 4', passMark:70 },
+  { stage:4, pool:[0,1,2,3,4,5,6,7],  label:'Stage 5', passMark:70 },
 ];
 
 function makeQ(stageIdx) {
-  const pool = STAGES[stageIdx].pool;
-  const correct = ANIMALS[pool[Math.floor(Math.random()*pool.length)]];
-  const others = ANIMALS.filter(a => a.name !== correct.name)
-    .sort(()=>Math.random()-0.5).slice(0,3);
-  return { correct, options:[correct,...others].sort(()=>Math.random()-0.5) };
+  const pool    = STAGES[stageIdx].pool;
+  const correct = ANIMALS[pool[Math.floor(Math.random() * pool.length)]];
+  const others  = ANIMALS
+    .filter(a => a.name !== correct.name)
+    .sort(() => Math.random() - 0.5)
+    .slice(0, 3);
+  return { correct, options: [correct, ...others].sort(() => Math.random() - 0.5) };
 }
 
 export default function AnimalSoundsGame() {
-  const navigate = useNavigate();
-  const { unlockedStages, unlockStage } = useStageProgress('animalsounds');
-  const [screen,   setScreen]   = useState('stages');
-  const [stageIdx, setStageIdx] = useState(0);
-  const [question, setQuestion] = useState(null);
-  const [qNum,     setQNum]     = useState(0);
-  const [feedback, setFeedback] = useState(null);
-  const scoreRef = useRef(0);
-  const [score, setScore] = useState(0);
+  const navigate  = useNavigate();
+  const { user }  = useAuth();
+  const { unlockedStages, unlockStage, loaded } = useStageProgress('animalsounds');
+
+  const [screen,    setScreen]   = useState('stages');
+  const [stageIdx,  setStageIdx] = useState(0);
+  const [question,  setQuestion] = useState(null);
+  const [qNum,      setQNum]     = useState(0);
+  const [feedback,  setFeedback] = useState(null);
+  const [listening, setListening]= useState(false);
+  const [aiFeedback,setAiFeed]   = useState('');
+  const [loadingAI, setLoadAI]   = useState(false);
+  const [heardText, setHeardText]= useState('');
+
+  const scoreRef   = useRef(0);
+  const questionRef= useRef(null); 
+  const startTime  = useRef(Date.now());
   const TOTAL = 5;
 
-  // Voice
-  const [listening, setListening] = useState(false);
-  const recogRef = useRef(null);
+  useEffect(() => { questionRef.current = question; }, [question]);
 
   const startStage = (idx) => {
-    setStageIdx(idx); scoreRef.current=0;
-    setScore(0); setQNum(0); setFeedback(null);
-    setQuestion(makeQ(idx)); setScreen('game');
+    setStageIdx(idx);
+    scoreRef.current = 0;
+    setQNum(0); setFeedback(null);
+    setAiFeed(''); setListening(false); setHeardText('');
+    const q = makeQ(idx);
+    setQuestion(q);
+    startTime.current = Date.now();
+    setScreen('game');
   };
 
   const speak = () => {
-    if (!('webkitSpeechRecognition' in window||'SpeechRecognition' in window)) {
-      alert('Voice recognition requires Chrome browser.'); return;
-    }
-    const SR = window.SpeechRecognition||window.webkitSpeechRecognition;
+    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SR) { alert('Voice recognition requires Chrome browser.'); return; }
+    if (feedback) return;
+
     const r = new SR();
-    r.maxAlternatives = 10; r.lang = 'en-US';
-    recogRef.current = r;
-    r.onstart  = () => setListening(true);
+    r.maxAlternatives = 5;
+    r.lang = 'en-US';
+
+    r.onstart  = () => { setListening(true); setHeardText(''); };
     r.onend    = () => setListening(false);
     r.onerror  = () => setListening(false);
+
     r.onresult = (e) => {
-      const alts = Array.from(e.results[0]).map(a => a.transcript.toLowerCase().trim());
-      const matched = question.options.find(opt =>
-        alts.some(a => opt.phonetics.some(ph => a.includes(ph)))
+      const heard = e.results[0][0].transcript.toLowerCase().trim();
+      setHeardText(heard);
+      const currentQ = questionRef.current;
+      if (!currentQ) return;
+
+      const matched = currentQ.options.find(opt =>
+        opt.phonetics.some(ph => heard.includes(ph)) || heard.includes(opt.name.toLowerCase())
       );
-      handlePick(matched || null, true);
+      handlePick(matched || null);
     };
     r.start();
   };
 
-  const handlePick = async (option, fromVoice=false) => {
+  const handlePick = async (option) => {
     if (feedback) return;
-    const correct = option?.name === question.correct.name;
-    if (correct) { scoreRef.current+=1; setScore(scoreRef.current); }
+    const currentQ = questionRef.current;
+    if (!currentQ) return;
+
+    const correct = option?.name === currentQ.correct.name;
+    if (correct) scoreRef.current += 1;
     setFeedback({ correct, chosen: option?.name });
+
     setTimeout(async () => {
-      setFeedback(null);
-      if (qNum+1 >= TOTAL) {
-        const pct = Math.round((scoreRef.current/TOTAL)*100);
-        const stars = pct>=90?3:pct>=70?2:1;
-        await submitScore({ game_id:'animalsounds', score:scoreRef.current,
-          max_score:TOTAL, percentage:pct, stars, difficulty_level:stageIdx+1 }).catch(()=>{});
-        if (pct >= 70) await unlockStage(stageIdx+1);
-        setScreen('result');
+      const nextQNum = qNum + 1;
+      if (nextQNum >= TOTAL) {
+        handleComplete();
       } else {
-        setQNum(q=>q+1);
+        setQNum(nextQNum);
         setQuestion(makeQ(stageIdx));
+        setFeedback(null);
+        setHeardText('');
       }
-    }, 1000);
+    }, 1500);
   };
 
-  const pct = Math.round((score/TOTAL)*100);
+  const handleComplete = async () => {
+    setScreen('result');
+    const pct = Math.round((scoreRef.current / TOTAL) * 100);
+    const passed = pct >= STAGES[stageIdx].passMark;
 
-  if (screen==='stages') return (
-    <div style={{ minHeight:'100vh', background:'#0B1120', padding:'28px', marginLeft:220, marginTop:60 }}>
-      <button onClick={()=>navigate('/student/dashboard')}
-        style={{ background:'none', border:'none', color:'#64748B', cursor:'pointer',
-          fontSize:13, fontFamily:'Nunito,sans-serif', marginBottom:20 }}>
-        ← Back to Dashboard
-      </button>
-      <div style={{ fontSize:22, fontWeight:900, color:'#F1F5F9', fontFamily:'Nunito,sans-serif', marginBottom:6 }}>
-        🔊 Animal Sounds
+    submitScore({
+      game_id: 'animalsounds', score: scoreRef.current, max_score: TOTAL,
+      percentage: pct, difficulty_level: stageIdx + 1,
+      time_taken: Math.floor((Date.now() - startTime.current) / 1000),
+    }).catch(() => {});
+
+    if (passed) unlockStage(stageIdx + 1);
+
+    setLoadAI(true);
+    try {
+      const res = await getGameFeedback({
+        game_id: 'animalsounds', score: scoreRef.current, max_score: TOTAL,
+        percentage: pct, age_group: user?.profile?.age_group || '3-6',
+      });
+      setAiFeed(res.data?.feedback);
+    } catch {
+      setAiFeed(passed ? 'Great job! You know your animals! 🌟' : 'Keep practicing! 💪');
+    } finally { setLoadAI(false); }
+  };
+
+  if (!loaded) return <div style={S.loadScreen}>Loading... ✨</div>;
+
+  if (screen === 'stages') return (
+    <div style={S.page}>
+      <div style={S.header}>
+        <motion.button style={S.backBtn} whileHover={{ scale:1.05 }} onClick={() => navigate('/student/dashboard')}>← Back</motion.button>
+        <div style={S.headerTitle}>🔊 Animal Sounds</div>
+        <div style={{ width:80 }} />
       </div>
-      <div style={{ fontSize:13, color:'#94A3B8', fontFamily:'Nunito,sans-serif', marginBottom:24 }}>
-        Hear the sound and say or tap the animal!
-      </div>
-      <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill,minmax(180px,1fr))', gap:12 }}>
-        {STAGES.map((s,i)=>{
-          const unlocked = unlockedStages.includes(i);
-          return (
-            <motion.div key={i}
-              style={{ background:'#1E293B', border:'1px solid #2D3A4F', borderRadius:16,
-                padding:20, textAlign:'center', cursor:unlocked?'pointer':'not-allowed', opacity:unlocked?1:0.5 }}
-              whileHover={unlocked?{ scale:1.04, borderColor:'rgba(139,92,246,0.4)',
-                boxShadow:'0 8px 28px rgba(139,92,246,0.15)' }:{}}
-              whileTap={unlocked?{ scale:0.96 }:{}}
-              onClick={()=>unlocked&&startStage(i)}>
-              <div style={{ fontSize:30, marginBottom:8 }}>{unlocked?'🔊':'🔒'}</div>
-              <div style={{ fontSize:13, fontWeight:800, color:'#F1F5F9', fontFamily:'Nunito,sans-serif' }}>{s.label}</div>
-            </motion.div>
-          );
-        })}
-      </div>
-    </div>
-  );
-
-  if (screen==='result') return (
-    <div style={{ minHeight:'100vh', background:'#0B1120', display:'flex',
-      alignItems:'center', justifyContent:'center' }}>
-      <motion.div initial={{ scale:0.8, opacity:0 }} animate={{ scale:1, opacity:1 }}
-        style={{ background:'#1E293B', border:'1px solid #2D3A4F', borderRadius:24,
-          padding:'40px 36px', textAlign:'center', maxWidth:360 }}>
-        <div style={{ fontSize:52, marginBottom:12 }}>{pct>=70?'🎉':'💪'}</div>
-        <div style={{ fontSize:22, fontWeight:900, color:'#F1F5F9', fontFamily:'Nunito,sans-serif', marginBottom:8 }}>
-          {pct>=70?'Well done!':'Keep going!'}
-        </div>
-        <div style={{ fontSize:40, fontWeight:900, color:'#8B5CF6', fontFamily:'Nunito,sans-serif', margin:'12px 0' }}>
-          {pct}%
-        </div>
-        <div style={{ display:'flex', gap:10, justifyContent:'center', marginTop:20 }}>
-          <motion.button whileHover={{ scale:1.04 }} whileTap={{ scale:0.96 }}
-            onClick={()=>startStage(stageIdx)}
-            style={{ padding:'10px 22px', borderRadius:12, border:'none',
-              background:'linear-gradient(135deg,#8B5CF6,#A78BFA)', color:'#fff',
-              fontSize:14, fontWeight:800, cursor:'pointer', fontFamily:'Nunito,sans-serif' }}>
-            Retry
-          </motion.button>
-          <motion.button whileHover={{ scale:1.04 }} whileTap={{ scale:0.96 }}
-            onClick={()=>setScreen('stages')}
-            style={{ padding:'10px 22px', borderRadius:12, border:'1px solid #2D3A4F',
-              background:'transparent', color:'#94A3B8', fontSize:14,
-              fontWeight:700, cursor:'pointer', fontFamily:'Nunito,sans-serif' }}>
-            Stages
-          </motion.button>
-        </div>
-      </motion.div>
-    </div>
-  );
-
-  return (
-    <div style={{ minHeight:'100vh', background:'#0B1120', display:'flex',
-      alignItems:'center', justifyContent:'center', padding:20 }}>
-      <div style={{ width:'100%', maxWidth:500 }}>
-        <div style={{ display:'flex', justifyContent:'space-between', marginBottom:14 }}>
-          <span style={{ fontSize:13, color:'#94A3B8', fontFamily:'Nunito,sans-serif' }}>
-            {qNum+1}/{TOTAL}</span>
-          <span style={{ fontSize:13, color:'#8B5CF6', fontWeight:700, fontFamily:'Nunito,sans-serif' }}>
-            ⭐ {score} correct</span>
-        </div>
-        <div style={{ height:5, background:'#2D3A4F', borderRadius:10, marginBottom:24, overflow:'hidden' }}>
-          <motion.div style={{ height:'100%', background:'linear-gradient(90deg,#8B5CF6,#A78BFA)', borderRadius:10 }}
-            animate={{ width:`${(qNum/TOTAL)*100}%` }}/>
-        </div>
-
-        {/* Animal to guess */}
-        <div style={{ background:'#1E293B', border:'1px solid #2D3A4F', borderRadius:20,
-          padding:'28px', textAlign:'center', marginBottom:20 }}>
-          <div style={{ fontSize:13, color:'#94A3B8', fontFamily:'Nunito,sans-serif', marginBottom:12 }}>
-            This animal says: <strong style={{ color:'#8B5CF6' }}>{question?.correct.sound}!</strong>
-          </div>
-          <motion.div style={{ fontSize:80 }}
-            animate={{ scale:[1,1.05,1] }} transition={{ duration:1.5, repeat:Infinity }}>
-            ❓
-          </motion.div>
-          <div style={{ fontSize:13, color:'#64748B', fontFamily:'Nunito,sans-serif', marginTop:8 }}>
-            Which animal is it?
-          </div>
-        </div>
-
-        {/* Tap options */}
-        <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:10, marginBottom:16 }}>
-          {question?.options.map((opt,i)=>{
-            const isCorrect = opt.name === question.correct.name;
-            const wasChosen = feedback?.chosen === opt.name;
+      <div style={S.stageArea}>
+        <h2 style={S.stageTitle}>Choose Your Stage</h2>
+        <p style={S.stageSub}>Listen to the sound and find the animal! 🎤</p>
+        <div style={S.stagesGrid}>
+          {STAGES.map((s, i) => {
+            const unlocked = unlockedStages.includes(i);
             return (
-              <motion.button key={i}
-                style={{ padding:'16px 10px', borderRadius:14, border:'1px solid #2D3A4F',
-                  background: feedback
-                    ? isCorrect ? 'rgba(16,185,129,0.2)'
-                    : wasChosen ? 'rgba(239,68,68,0.15)' : 'rgba(30,41,59,0.5)'
-                    : 'rgba(30,41,59,0.6)',
-                  cursor:'pointer', textAlign:'center',
-                  border: feedback
-                    ? isCorrect ? '1px solid rgba(16,185,129,0.5)'
-                    : wasChosen ? '1px solid rgba(239,68,68,0.4)' : '1px solid #2D3A4F'
-                    : '1px solid #2D3A4F' }}
-                whileHover={!feedback?{ scale:1.04, borderColor:'rgba(139,92,246,0.4)',
-                  background:'rgba(139,92,246,0.1)' }:{}}
-                whileTap={!feedback?{ scale:0.96 }:{}}
-                onClick={()=>!feedback&&handlePick(opt)}>
-                <div style={{ fontSize:36 }}>{opt.emoji}</div>
-                <div style={{ fontSize:13, fontWeight:700, color:'#F1F5F9',
-                  fontFamily:'Nunito,sans-serif', marginTop:6 }}>{opt.name}</div>
-              </motion.button>
+              <motion.div key={i}
+                style={{ ...S.stageCard, opacity:unlocked?1:0.5,
+                  border: stageIdx===i ? '3px solid #8B5CF6' : '3px solid transparent',
+                  background: unlocked ? '#EDE9FE' : '#F3F4F6' }}
+                whileTap={unlocked ? { scale:0.95 } : {}}
+                onClick={() => { if (unlocked) setStageIdx(i); }}>
+                <div style={{ fontSize:32 }}>{unlocked ? '🔊' : '🔒'}</div>
+                <div style={{ fontSize:15, fontWeight:800, color: unlocked?'#7C3AED':'#9CA3AF' }}>{s.label}</div>
+                {unlocked && <div style={{ fontSize:11, color:'#10B981', fontWeight:700 }}>✅ Open</div>}
+              </motion.div>
             );
           })}
         </div>
-
-        {/* Voice button */}
-        <motion.button
-          style={{ width:'100%', padding:'13px', borderRadius:12, border:'none',
-            background: listening ? 'linear-gradient(135deg,#EF4444,#F87171)'
-              : 'linear-gradient(135deg,#8B5CF6,#A78BFA)',
-            color:'#fff', fontSize:14, fontWeight:800, cursor:'pointer',
-            fontFamily:'Nunito,sans-serif',
-            boxShadow: listening ? '0 4px 20px rgba(239,68,68,0.4)' : '0 4px 20px rgba(139,92,246,0.35)' }}
-          whileHover={{ scale:1.02 }} whileTap={{ scale:0.97 }}
-          onClick={speak}>
-          {listening ? '🔴 Listening... (say the animal name)' : '🎤 Say the Animal Name'}
+        <motion.button style={{ ...S.startBtn, background:'linear-gradient(135deg,#8B5CF6,#EC4899)' }}
+          whileHover={{ scale:1.05 }} onClick={() => startStage(stageIdx)}>
+          Start Game 🚀
         </motion.button>
+      </div>
+    </div>
+  );
 
-        <AnimatePresence>
-          {feedback && (
-            <motion.div initial={{ opacity:0, y:8 }} animate={{ opacity:1, y:0 }} exit={{ opacity:0 }}
-              style={{ textAlign:'center', marginTop:14, fontSize:17, fontWeight:800,
-                color:feedback.correct?'#10B981':'#EF4444', fontFamily:'Nunito,sans-serif' }}>
-              {feedback.correct ? '✅ Correct!' : `❌ It was ${question?.correct.name} ${question?.correct.emoji}`}
-            </motion.div>
-          )}
-        </AnimatePresence>
+  if (screen === 'result') {
+    const pct = Math.round((scoreRef.current / TOTAL) * 100);
+    const passed = pct >= STAGES[stageIdx].passMark;
+    return (
+      <div style={S.page}>
+        <motion.div style={S.resultCard} initial={{ scale:0.8, opacity:0 }} animate={{ scale:1, opacity:1 }}>
+          <div style={{ fontSize:80 }}>{passed ? '🏆' : '💪'}</div>
+          <h1 style={S.resultTitle}>{passed ? 'Well Done! 🎉' : 'Keep Trying!'}</h1>
+          <div style={S.resultPct}>{pct}%</div>
+          <p style={S.resultScore}>{scoreRef.current} / {TOTAL} Correct</p>
+          <div style={S.aiBox}>
+            {loadingAI ? <div>🤖 AI analyzing...</div> : <p style={S.aiText}>{aiFeedback}</p>}
+          </div>
+          <div style={S.resultBtns}>
+            <motion.button style={S.playBtn} onClick={() => setScreen('stages')}>Stages 🚀</motion.button>
+            <motion.button style={S.homeBtn} onClick={() => navigate('/student/dashboard')}>Home 🏠</motion.button>
+          </div>
+        </motion.div>
+      </div>
+    );
+  }
+
+  return (
+    <div style={S.page}>
+      <div style={S.header}>
+        <motion.button style={S.backBtn} onClick={() => setScreen('stages')}>← Stages</motion.button>
+        <div style={S.headerTitle}>🔊 {STAGES[stageIdx].label}</div>
+        <div style={S.scoreBadge}>⭐ {scoreRef.current}/{TOTAL}</div>
+      </div>
+
+      <div style={S.progressWrap}>
+        <div style={S.progressTrack}>
+          <motion.div style={S.progressFill} animate={{ width:`${((qNum + 1) / TOTAL) * 100}%` }} />
+        </div>
+      </div>
+
+      <div style={S.gameArea}>
+        <motion.div style={S.questionBox} key={qNum} initial={{ y:20, opacity:0 }} animate={{ y:0, opacity:1 }}>
+          <p style={S.questionLabel}>Which animal says...</p>
+          <div style={S.soundText}>"{question?.correct.sound}!"</div>
+          <div style={{ fontSize:60 }}>❓</div>
+        </motion.div>
+
+        <div style={S.optionsGrid}>
+          {question?.options.map((opt, i) => (
+            <motion.button key={i}
+              style={{
+                ...S.optionBtn,
+                background: feedback ? (opt.name === question.correct.name ? '#D1FAE5' : (feedback.chosen === opt.name ? '#FEE2E2' : '#fff')) : '#fff',
+                borderColor: feedback ? (opt.name === question.correct.name ? '#10B981' : (feedback.chosen === opt.name ? '#EF4444' : '#E5E7EB')) : '#E5E7EB'
+              }}
+              whileHover={!feedback ? { scale:1.02 } : {}}
+              onClick={() => handlePick(opt)}>
+              <div style={{ fontSize:40 }}>{opt.emoji}</div>
+              <div style={{ fontWeight:700 }}>{opt.name}</div>
+            </motion.button>
+          ))}
+        </div>
+
+        <motion.button style={{ ...S.voiceBtn, background: listening ? '#EF4444' : '#8B5CF6' }}
+          onClick={speak} disabled={!!feedback}>
+          {listening ? '🔴 Listening...' : '🎤 Say Animal Name'}
+        </motion.button>
+        {heardText && <div style={S.heardTxt}>Heard: "{heardText}"</div>}
       </div>
     </div>
   );
 }
+
+const S = {
+  loadScreen: { minHeight:'100vh', display:'flex', alignItems:'center', justifyContent:'center', background:'#FDF4FF' },
+  page:        { minHeight:'100vh', background:'#FDF4FF', display:'flex', flexDirection:'column' },
+  header:      { background:'#fff', padding:'14px 24px', display:'flex', alignItems:'center', justifyContent:'space-between', boxShadow:'0 2px 10px rgba(0,0,0,0.05)' },
+  backBtn:     { background:'#EDE9FE', color:'#7C3AED', border:'none', padding:'8px 16px', borderRadius:12, fontWeight:700, cursor:'pointer' },
+  headerTitle: { fontSize:20, fontWeight:900, color:'#1F1F2E' },
+  scoreBadge:  { background:'#FEF3C7', color:'#D97706', padding:'6px 14px', borderRadius:20, fontWeight:700 },
+  progressWrap:{ padding:'10px 24px', background:'#fff' },
+  progressTrack:{ height:8, background:'#EDE9FE', borderRadius:10, overflow:'hidden' },
+  progressFill:{ height:'100%', background:'#8B5CF6' },
+  gameArea:    { flex:1, display:'flex', flexDirection:'column', alignItems:'center', padding:'20px', gap:15, justifyContent:'center' },
+  questionBox: { background:'#fff', borderRadius:24, padding:'25px', textAlign:'center', boxShadow:'0 8px 30px rgba(0,0,0,0.05)', width:'100%', maxWidth:380 },
+  questionLabel:{ fontSize:14, color:'#6B7280', fontWeight:700 },
+  soundText:   { fontSize:40, fontWeight:900, color:'#7C3AED', margin:'10px 0' },
+  optionsGrid: { display:'grid', gridTemplateColumns:'1fr 1fr', gap:12, width:'100%', maxWidth:380 },
+  optionBtn:   { padding:'15px', borderRadius:18, border:'2px solid #E5E7EB', cursor:'pointer', fontFamily:'inherit' },
+  voiceBtn:    { width:'100%', maxWidth:380, padding:'15px', borderRadius:15, border:'none', color:'#fff', fontWeight:800, cursor:'pointer' },
+  heardTxt:    { fontSize:13, color:'#6B7280' },
+  stageArea:   { flex:1, display:'flex', flexDirection:'column', alignItems:'center', padding:'30px 20px' },
+  stageTitle:  { fontSize:24, fontWeight:900 },
+  stageSub:    { color:'#6B7280', marginBottom:30 },
+  stagesGrid:  { display:'grid', gridTemplateColumns:'repeat(auto-fit,minmax(120px,1fr))', gap:15, width:'100%', maxWidth:500, marginBottom:30 },
+  stageCard:   { borderRadius:20, padding:'20px', textAlign:'center', cursor:'pointer', boxShadow:'0 4px 10px rgba(0,0,0,0.05)' },
+  startBtn:    { color:'#fff', padding:'15px 40px', borderRadius:15, fontSize:18, fontWeight:800, border:'none' },
+  resultCard:  { background:'#fff', borderRadius:30, padding:'40px', textAlign:'center', maxWidth:400, margin:'auto', boxShadow:'0 20px 50px rgba(0,0,0,0.1)' },
+  resultTitle: { fontSize:28, fontWeight:900 },
+  resultPct:   { fontSize:60, fontWeight:900, color:'#8B5CF6' },
+  aiBox:       { background:'#F8FAFC', padding:'15px', borderRadius:15, margin:'20px 0', textAlign:'left' },
+  aiText:      { fontSize:13, color:'#475569', lineHeight:1.5 },
+  resultBtns:  { display:'flex', gap:10, justifyContent:'center' },
+  playBtn:     { background:'#8B5CF6', color:'#fff', padding:'12px 20px', borderRadius:12, border:'none', fontWeight:700 },
+  homeBtn:     { background:'#F1F5F9', color:'#475569', padding:'12px 20px', borderRadius:12, border:'none', fontWeight:700 },
+};

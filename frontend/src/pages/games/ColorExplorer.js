@@ -1,3 +1,6 @@
+//this is colourexplorer.js
+
+
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -12,7 +15,6 @@ const STAGES = [
   { name:'Stage 4', colors:[{name:'Red',hex:'#EF4444'},{name:'Blue',hex:'#3B82F6'},{name:'Green',hex:'#22C55E'},{name:'Yellow',hex:'#EAB308'},{name:'Orange',hex:'#F97316'},{name:'Purple',hex:'#A855F7'}], questions:5, passMark:70 },
 ];
 
-// Color phonetics — ways a 3-6 year old might say each color
 const COLOR_PHONETICS = {
   'Red':    ['red','redd','red color'],
   'Blue':   ['blue','blew','bloo'],
@@ -29,15 +31,13 @@ const COLOR_PHONETICS = {
 };
 
 function matchesColor(heard, colorName) {
-  const h   = heard.toLowerCase().trim();
-  const cn  = colorName.toLowerCase();
+  const h  = heard.toLowerCase().trim();
+  const cn = colorName.toLowerCase();
   if (h.includes(cn)) return true;
   if (h === cn) return true;
   const ph = COLOR_PHONETICS[colorName] || [cn];
   return ph.some(p => h === p || h.includes(p));
 }
-
-function shuffle(arr) { return [...arr].sort(() => Math.random() - 0.5); }
 
 export default function ColorExplorer() {
   const navigate = useNavigate();
@@ -61,12 +61,12 @@ export default function ColorExplorer() {
   const [aiFeedback,    setAiFeedback]    = useState('');
   const [loadingAI,     setLoadingAI]     = useState(false);
 
-  const recRef      = useRef(null);
-  const answerDone  = useRef(false);
-  const targetRef   = useRef(null);
-  const scoreRef    = useRef(0);
-  const roundRef    = useRef(0);
-  const startTime   = useRef(Date.now());
+  const recRef     = useRef(null);
+  const answerDone = useRef(false);
+  const targetRef  = useRef(null);
+  const scoreRef   = useRef(0);
+  const roundRef   = useRef(0);
+  const startTime  = useRef(Date.now());
   const currentStage = STAGES[stageIndex];
 
   useEffect(() => { targetRef.current = target; }, [target]);
@@ -75,27 +75,20 @@ export default function ColorExplorer() {
     const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (!SR) { setVoiceOK(false); return; }
     setVoiceOK(true);
-
     const r = new SR();
     r.lang = 'en-US'; r.continuous = false; r.interimResults = false; r.maxAlternatives = 10;
-
     r.onresult = (e) => {
       if (answerDone.current) return;
       const results = e.results[0];
-      const heard   = [];
+      const heard = [];
       for (let i = 0; i < results.length; i++) heard.push(results[i].transcript);
       setHeardText(heard[0]);
       setMicState('done');
       const colorName = targetRef.current?.name || '';
-      const matched   = heard.some(h => matchesColor(h, colorName));
+      const matched = heard.some(h => matchesColor(h, colorName));
       processResult(matched);
     };
-
-    r.onerror = (e) => {
-      setMicState('idle');
-      if (e.error !== 'aborted') setHeardText('Could not hear — tap mic and try again!');
-    };
-
+    r.onerror = (e) => { setMicState('idle'); if (e.error !== 'aborted') setHeardText('Could not hear — tap mic and try again!'); };
     r.onend = () => { if (micState === 'listening') setMicState('idle'); };
     recRef.current = r;
     return () => { try { r.abort(); } catch {} };
@@ -118,36 +111,23 @@ export default function ColorExplorer() {
     answerDone.current = true;
     try { recRef.current?.stop(); } catch {}
     setMicState('done');
-
-    if (correct) {
-      scoreRef.current += 1; setScore(scoreRef.current); setFeedback('correct');
-    } else {
+    if (correct) { scoreRef.current += 1; setScore(scoreRef.current); setFeedback('correct'); }
+    else {
       setFeedback('wrong');
       setWrongCount(prev => ({ ...prev, [targetRef.current?.name]: (prev[targetRef.current?.name]||0)+1 }));
-      setStageFailures(prev => {
-        const newF = prev + 1;
-        if (newF >= 2) setShowHint(true);
-        return newF;
-      });
+      setStageFailures(prev => { const nf = prev+1; if (nf >= 2) setShowHint(true); return nf; });
     }
-
     setTimeout(() => {
-      roundRef.current += 1;
-      setRound(roundRef.current);
-
+      roundRef.current += 1; setRound(roundRef.current);
       if (roundRef.current >= currentStage.questions) { setStageOver(true); return; }
-
       setUsedColors(prevUsed => {
         const available = currentStage.colors.filter(c => !prevUsed.includes(c.name));
-        const pool      = available.length > 0 ? available : currentStage.colors;
-        const newT      = pool[Math.floor(Math.random() * pool.length)];
+        const pool = available.length > 0 ? available : currentStage.colors;
+        const newT = pool[Math.floor(Math.random() * pool.length)];
         setTarget(newT);
         return [...prevUsed, newT.name];
       });
-
-      setFeedback(null);
-      setHeardText(''); setMicState('idle');
-      answerDone.current = false;
+      setFeedback(null); setHeardText(''); setMicState('idle'); answerDone.current = false;
     }, 1500);
   };
 
@@ -165,12 +145,11 @@ export default function ColorExplorer() {
     setShowHint(false); setStageFailures(0);
     setWrongCount({}); setHeardText('');
     setStageOver(false); setPlaying(true); setMicState('idle');
-    answerDone.current = false;
-    startTime.current  = Date.now();
+    answerDone.current = false; startTime.current = Date.now();
   };
 
   const handleStageComplete = async () => {
-    const pct    = Math.min(100, Math.round((scoreRef.current/currentStage.questions)*100));
+    const pct = Math.min(100, Math.round((scoreRef.current/currentStage.questions)*100));
     const passed = pct >= currentStage.passMark;
     submitScore({ game_id:'colors', score:scoreRef.current, max_score:currentStage.questions, time_taken:Math.floor((Date.now()-startTime.current)/1000), difficulty_level:stageIndex+1, ai_data:{wrong_colors:wrongCount} }).catch(()=>{});
     if (passed && stageIndex+1 < STAGES.length) unlockStage(stageIndex+1);
@@ -186,46 +165,42 @@ export default function ColorExplorer() {
 
   if (!loaded) return <div style={S.loadScreen}>Loading... ✨</div>;
 
-  if (!playing) {
-    return (
-      <div style={S.page}>
-        <div style={S.header}>
-          <motion.button style={S.backBtn} whileHover={{ scale:1.05 }} onClick={() => navigate('/student/dashboard')}>← Back</motion.button>
-          <div style={S.headerTitle}>🎨 Color Explorer</div>
-          <div style={{ width:80 }} />
-        </div>
-        <div style={S.stageArea}>
-          <h2 style={S.stageTitle}>Choose Your Stage</h2>
-          <p style={S.stageSub}>See the color — say its name! Voice only, no reading needed! Score 70% to unlock! ✨</p>
-          <div style={S.stagesGrid}>
-            {STAGES.map((s, i) => {
-              const unlocked = unlockedStages.includes(i);
-              return (
-                <motion.div key={i} style={{ ...S.stageCard, opacity:unlocked?1:0.5, border:stageIndex===i?'3px solid #EC4899':'3px solid transparent', background:unlocked?'#FCE7F3':'#F3F4F6' }}
-                  whileHover={unlocked?{scale:1.05}:{}} whileTap={unlocked?{scale:0.95}:{}}
-                  onClick={() => { if (unlocked) { setStageIndex(i); setStageOver(false); } }}>
-                  <div style={{ display:'flex', gap:6, justifyContent:'center', marginBottom:8 }}>
-                    {s.colors.slice(0,4).map(c => (
-                      <div key={c.name} style={{ width:22, height:22, borderRadius:'50%', background:c.hex, border:'2px solid rgba(0,0,0,0.1)' }} />
-                    ))}
-                  </div>
-                  <div style={{ fontSize:15, fontWeight:800, color:unlocked?'#EC4899':'#9CA3AF' }}>{s.name}</div>
-                  <div style={{ fontSize:11, color:'#9CA3AF', marginTop:2 }}>{s.colors.map(c=>c.name).join(', ')}</div>
-                  {unlocked&&<div style={{ fontSize:11, color:'#10B981', fontWeight:700, marginTop:4 }}>✅ Unlocked</div>}
-                </motion.div>
-              );
-            })}
-          </div>
-          <motion.button style={{ ...S.startBtn, background:'linear-gradient(135deg,#EC4899,#F97316)' }} whileHover={{ scale:1.05 }} onClick={startStage}>
-            Start {STAGES[stageIndex].name} 🚀
-          </motion.button>
-        </div>
+  if (!playing) return (
+    <div style={S.page}>
+      <div style={S.header}>
+        <motion.button style={S.backBtn} whileHover={{ scale:1.05 }} onClick={() => navigate('/student/dashboard')}>← Back</motion.button>
+        <div style={S.headerTitle}>🎨 Color Explorer</div>
+        <div style={{ width:80 }} />
       </div>
-    );
-  }
+      <div style={S.stageArea}>
+        <h2 style={S.stageTitle}>Choose Your Stage</h2>
+        <p style={S.stageSub}>See the color — say its name! Voice only! Score 70% to unlock! ✨</p>
+        <div style={S.stagesGrid}>
+          {STAGES.map((s, i) => {
+            const unlocked = unlockedStages.includes(i);
+            return (
+              <motion.div key={i} style={{ ...S.stageCard, opacity:unlocked?1:0.5, border:stageIndex===i?'3px solid #EC4899':'3px solid transparent', background:unlocked?'#FCE7F3':'#F3F4F6' }}
+                whileHover={unlocked?{scale:1.05}:{}} whileTap={unlocked?{scale:0.95}:{}}
+                onClick={() => { if (unlocked) { setStageIndex(i); setStageOver(false); } }}>
+                <div style={{ display:'flex', gap:6, justifyContent:'center', marginBottom:8 }}>
+                  {s.colors.slice(0,4).map(c => <div key={c.name} style={{ width:22, height:22, borderRadius:'50%', background:c.hex, border:'2px solid rgba(0,0,0,0.1)' }} />)}
+                </div>
+                <div style={{ fontSize:15, fontWeight:800, color:unlocked?'#EC4899':'#9CA3AF' }}>{s.name}</div>
+                <div style={{ fontSize:11, color:'#9CA3AF', marginTop:2 }}>{s.colors.map(c=>c.name).join(', ')}</div>
+                {unlocked && <div style={{ fontSize:11, color:'#10B981', fontWeight:700, marginTop:4 }}>✅ Unlocked</div>}
+              </motion.div>
+            );
+          })}
+        </div>
+        <motion.button style={{ ...S.startBtn, background:'linear-gradient(135deg,#EC4899,#F97316)' }} whileHover={{ scale:1.05 }} onClick={startStage}>
+          Start {STAGES[stageIndex].name} 🚀
+        </motion.button>
+      </div>
+    </div>
+  );
 
   if (stageOver) {
-    const pct    = Math.min(100, Math.round((scoreRef.current/currentStage.questions)*100));
+    const pct = Math.min(100, Math.round((scoreRef.current/currentStage.questions)*100));
     const passed = pct >= currentStage.passMark;
     return (
       <div style={S.page}>
@@ -259,21 +234,24 @@ export default function ColorExplorer() {
         <div style={S.headerTitle}>🎨 {currentStage.name}</div>
         <div style={S.scoreBadge}>⭐ {scoreRef.current}/{currentStage.questions}</div>
       </div>
+
+      {/* FIXED: progress fills to 100% on Q5 */}
       <div style={S.progressWrap}>
-        <div style={S.progressTrack}><motion.div style={S.progressFill} animate={{ width:`${(roundRef.current/currentStage.questions)*100}%` }} transition={{ duration:0.4 }} /></div>
+        <div style={S.progressTrack}>
+          <motion.div style={S.progressFill}
+            animate={{ width:`${((roundRef.current + 1) / currentStage.questions) * 100}%` }}
+            transition={{ duration:0.4 }} />
+        </div>
         <span style={S.roundText}>Q{roundRef.current+1}/{currentStage.questions}</span>
       </div>
+
       <div style={S.gameArea}>
-        {/* PLAIN COLOR BOX — no shapes, no emoji, just the pure color */}
         <motion.div style={S.questionBox} key={`${stageIndex}-${roundRef.current}`} initial={{ scale:0.8,opacity:0 }} animate={{ scale:1,opacity:1 }} transition={{ type:'spring',bounce:0.4 }}>
           <p style={S.questionLabel}>What color is this? Say its name!</p>
-          <motion.div
-            style={{ width:180, height:180, borderRadius:28, background:target.hex, margin:'16px auto', boxShadow:`0 12px 40px ${target.hex}60`, border:'4px solid rgba(255,255,255,0.8)' }}
-            animate={{ scale:[1, 1.03, 1] }}
-            transition={{ duration:2, repeat:Infinity }} />
+          <motion.div style={{ width:180, height:180, borderRadius:28, background:target.hex, margin:'16px auto', boxShadow:`0 12px 40px ${target.hex}60`, border:'4px solid rgba(255,255,255,0.8)' }}
+            animate={{ scale:[1,1.03,1] }} transition={{ duration:2, repeat:Infinity }} />
         </motion.div>
 
-        {/* Hint — only after 2 stage failures, shows first letter not full name */}
         <AnimatePresence>
           {showHint && (
             <motion.div style={{ background:'#FEF3C7', color:'#92400E', borderRadius:14, padding:'12px 20px', fontSize:14, fontWeight:700, border:'2px solid #FCD34D', textAlign:'center', maxWidth:340 }}
@@ -283,7 +261,6 @@ export default function ColorExplorer() {
           )}
         </AnimatePresence>
 
-        {/* Voice Section */}
         {voiceOK ? (
           <div style={{ textAlign:'center', width:'100%', maxWidth:380 }}>
             {!feedback && (

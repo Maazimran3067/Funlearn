@@ -1,3 +1,6 @@
+//this is alphabetgame.js
+
+
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -17,7 +20,7 @@ const PHONETICS = {
   A:['a','ay','aye','hey','ei'],         B:['b','be','bee','bea','bi'],
   C:['c','see','sea','si','ce'],         D:['d','dee','de','di'],
   E:['e','ee','eee','ih'],               F:['f','ef','eff','effe'],
-  G:['g','gee','ji','ge'],              H:['h','aitch','haitch','eich'],
+  G:['g','gee','ji','ge'],               H:['h','aitch','haitch','eich'],
   I:['i','eye','ai','ay'],               J:['j','jay','jae','je'],
   K:['k','kay','kae','ke'],              L:['l','el','ell','le'],
   M:['m','em','emm','me'],               N:['n','en','enn','ne'],
@@ -32,11 +35,8 @@ const PHONETICS = {
 function matchesLetter(heard, letter) {
   const h = heard.toLowerCase().trim();
   const l = letter.toUpperCase();
-  // Direct single char
   if (h.toUpperCase() === l) return true;
-  // First character only (child says just the letter sound)
   if (h.length <= 4 && h.charAt(0).toUpperCase() === l) return true;
-  // Phonetics
   const ph = PHONETICS[l] || [];
   return ph.some(p => h === p || h.startsWith(p + ' ') || h === p);
 }
@@ -77,31 +77,18 @@ export default function AlphabetGame() {
     const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (!SR) { setVoiceOK(false); return; }
     setVoiceOK(true);
-
     const r = new SR();
-    r.lang            = 'en-US';
-    r.continuous      = false;
-    r.interimResults  = false;
-    r.maxAlternatives = 10;
-
+    r.lang = 'en-US'; r.continuous = false; r.interimResults = false; r.maxAlternatives = 10;
     r.onresult = (e) => {
       if (answerDone.current) return;
       const results = e.results[0];
-      const heard   = [];
+      const heard = [];
       for (let i = 0; i < results.length; i++) heard.push(results[i].transcript);
-      setHeardText(heard[0]);
-      setMicState('done');
-      
-      
+      setHeardText(heard[0]); setMicState('done');
       const matched = heard.some(h => matchesLetter(h, targetRef.current));
       processAnswer(matched);
     };
-
-    r.onerror = (e) => {
-      setMicState('idle');
-      if (e.error !== 'aborted') setHeardText('Could not hear — tap mic and try again!');
-    };
-
+    r.onerror = (e) => { setMicState('idle'); if (e.error !== 'aborted') setHeardText('Could not hear — tap mic and try again!'); };
     r.onend = () => { if (micState === 'listening') setMicState('idle'); };
     recRef.current = r;
     return () => { try { r.abort(); } catch {} };
@@ -116,50 +103,29 @@ export default function AlphabetGame() {
       setTimeout(() => { try { recRef.current?.start(); } catch {} }, 200);
     }
   };
-
-  const stopMic = () => {
-    try { recRef.current?.stop(); } catch {}
-    setMicState('idle');
-  };
+  const stopMic = () => { try { recRef.current?.stop(); } catch {} setMicState('idle'); };
 
   const processAnswer = (correct) => {
     if (answerDone.current) return;
     answerDone.current = true;
     try { recRef.current?.stop(); } catch {}
     setMicState('done');
-
-    if (correct) {
-      scoreRef.current += 1;
-      setScore(scoreRef.current);
-      setFeedback('correct');
-    } else {
+    if (correct) { scoreRef.current += 1; setScore(scoreRef.current); setFeedback('correct'); }
+    else {
       setFeedback('wrong');
       setWrongLetters(prev => ({ ...prev, [targetRef.current]: (prev[targetRef.current]||0)+1 }));
-      setStageFailures(prev => {
-        const newF = prev + 1;
-        if (newF >= 2) setShowHint(true);
-        return newF;
-      });
+      setStageFailures(prev => { const nf = prev+1; if (nf >= 2) setShowHint(true); return nf; });
     }
-
     setTimeout(() => {
-      roundRef.current += 1;
-      setRound(roundRef.current);
-
-      if (roundRef.current >= currentStage.questions) {
-        setStageOver(true); return;
-      }
-
+      roundRef.current += 1; setRound(roundRef.current);
+      if (roundRef.current >= currentStage.questions) { setStageOver(true); return; }
       setUsedLetters(prevUsed => {
         const available = currentStage.letters.filter(l => !prevUsed.includes(l));
-        const letter    = available.length > 0 ? available[Math.floor(Math.random()*available.length)] : currentStage.letters[Math.floor(Math.random()*currentStage.letters.length)];
+        const letter = available.length > 0 ? available[Math.floor(Math.random()*available.length)] : currentStage.letters[Math.floor(Math.random()*currentStage.letters.length)];
         setTarget(letter);
         return [...prevUsed, letter];
       });
-
-      setFeedback(null);
-      setHeardText(''); setMicState('idle');
-      answerDone.current = false;
+      setFeedback(null); setHeardText(''); setMicState('idle'); answerDone.current = false;
     }, 1500);
   };
 
@@ -171,12 +137,11 @@ export default function AlphabetGame() {
     setShowHint(false); setStageFailures(0);
     setWrongLetters({}); setHeardText('');
     setStageOver(false); setPlaying(true); setMicState('idle');
-    answerDone.current = false;
-    startTime.current  = Date.now();
+    answerDone.current = false; startTime.current = Date.now();
   };
 
   const handleStageComplete = async () => {
-    const pct    = Math.min(100, Math.round((scoreRef.current/currentStage.questions)*100));
+    const pct = Math.min(100, Math.round((scoreRef.current/currentStage.questions)*100));
     const passed = pct >= currentStage.passMark;
     submitScore({ game_id:'alphabet', score:scoreRef.current, max_score:currentStage.questions, time_taken:Math.floor((Date.now()-startTime.current)/1000), difficulty_level:stageIndex+1, ai_data:{wrong_letters:wrongLetters} }).catch(()=>{});
     if (passed && stageIndex+1 < STAGES.length) unlockStage(stageIndex+1);
@@ -184,7 +149,7 @@ export default function AlphabetGame() {
     try {
       const res = await getGameFeedback({ game_id:'alphabet', score:scoreRef.current, max_score:currentStage.questions, percentage:pct, age_group:user?.profile?.age_group||'3-6', ai_data:{wrong_letters:wrongLetters} });
       setAiFeedback(res.data.feedback);
-    } catch { setAiFeedback(pct>=70?`Stage passed! 🌟`:`Keep practising! 💪`); }
+    } catch { setAiFeedback(pct>=70?'Stage passed! 🌟':'Keep practising! 💪'); }
     finally { setLoadingAI(false); }
   };
 
@@ -192,42 +157,40 @@ export default function AlphabetGame() {
 
   if (!loaded) return <div style={S.loadScreen}>Loading... ✨</div>;
 
-  if (!playing) {
-    return (
-      <div style={S.page}>
-        <div style={S.header}>
-          <motion.button style={S.backBtn} whileHover={{ scale:1.05 }} onClick={() => navigate('/student/dashboard')}>← Back</motion.button>
-          <div style={S.headerTitle}>🔤 Alphabet Adventure</div>
-          <div style={{ width:80 }} />
-        </div>
-        <div style={S.stageArea}>
-          <h2 style={S.stageTitle}>Choose Your Stage</h2>
-          <p style={S.stageSub}>Tap mic, say the letter, tap to stop! Score 70% to unlock next stage! ✨</p>
-          <div style={S.stagesGrid}>
-            {STAGES.map((s, i) => {
-              const unlocked = unlockedStages.includes(i);
-              return (
-                <motion.div key={i} style={{ ...S.stageCard, opacity:unlocked?1:0.5, border:stageIndex===i?'3px solid #7C3AED':'3px solid transparent', background:unlocked?'#EDE9FE':'#F3F4F6' }}
-                  whileHover={unlocked?{scale:1.05}:{}} whileTap={unlocked?{scale:0.95}:{}}
-                  onClick={() => { if (unlocked) { setStageIndex(i); setStageOver(false); } }}>
-                  <div style={{ fontSize:28 }}>{unlocked?'🔤':'🔒'}</div>
-                  <div style={{ fontSize:15, fontWeight:800, color:unlocked?'#7C3AED':'#9CA3AF' }}>{s.name}</div>
-                  <div style={{ fontSize:14, letterSpacing:3, color:'#6B7280', marginTop:4 }}>{s.letters.join(' ')}</div>
-                  {unlocked&&<div style={{ fontSize:11, color:'#10B981', fontWeight:700, marginTop:4 }}>✅ Unlocked</div>}
-                </motion.div>
-              );
-            })}
-          </div>
-          <motion.button style={S.startBtn} whileHover={{ scale:1.05 }} onClick={startStage}>
-            Start {STAGES[stageIndex].name} 🚀
-          </motion.button>
-        </div>
+  if (!playing) return (
+    <div style={S.page}>
+      <div style={S.header}>
+        <motion.button style={S.backBtn} whileHover={{ scale:1.05 }} onClick={() => navigate('/student/dashboard')}>← Back</motion.button>
+        <div style={S.headerTitle}>🔤 Alphabet Adventure</div>
+        <div style={{ width:80 }} />
       </div>
-    );
-  }
+      <div style={S.stageArea}>
+        <h2 style={S.stageTitle}>Choose Your Stage</h2>
+        <p style={S.stageSub}>Tap mic, say the letter, tap to stop! Score 70% to unlock next stage! ✨</p>
+        <div style={S.stagesGrid}>
+          {STAGES.map((s, i) => {
+            const unlocked = unlockedStages.includes(i);
+            return (
+              <motion.div key={i} style={{ ...S.stageCard, opacity:unlocked?1:0.5, border:stageIndex===i?'3px solid #7C3AED':'3px solid transparent', background:unlocked?'#EDE9FE':'#F3F4F6' }}
+                whileHover={unlocked?{scale:1.05}:{}} whileTap={unlocked?{scale:0.95}:{}}
+                onClick={() => { if (unlocked) { setStageIndex(i); setStageOver(false); } }}>
+                <div style={{ fontSize:28 }}>{unlocked?'🔤':'🔒'}</div>
+                <div style={{ fontSize:15, fontWeight:800, color:unlocked?'#7C3AED':'#9CA3AF' }}>{s.name}</div>
+                <div style={{ fontSize:14, letterSpacing:3, color:'#6B7280', marginTop:4 }}>{s.letters.join(' ')}</div>
+                {unlocked&&<div style={{ fontSize:11, color:'#10B981', fontWeight:700, marginTop:4 }}>✅ Unlocked</div>}
+              </motion.div>
+            );
+          })}
+        </div>
+        <motion.button style={S.startBtn} whileHover={{ scale:1.05 }} onClick={startStage}>
+          Start {STAGES[stageIndex].name} 🚀
+        </motion.button>
+      </div>
+    </div>
+  );
 
   if (stageOver) {
-    const pct    = Math.min(100, Math.round((scoreRef.current/currentStage.questions)*100));
+    const pct = Math.min(100, Math.round((scoreRef.current/currentStage.questions)*100));
     const passed = pct >= currentStage.passMark;
     return (
       <div style={S.page}>
@@ -260,10 +223,17 @@ export default function AlphabetGame() {
         <div style={S.headerTitle}>🔤 {currentStage.name}</div>
         <div style={S.scoreBadge}>⭐ {scoreRef.current}/{currentStage.questions}</div>
       </div>
+
+      {/* FIXED: fills to 100% on Q5 */}
       <div style={S.progressWrap}>
-        <div style={S.progressTrack}><motion.div style={S.progressFill} animate={{ width:`${(roundRef.current/currentStage.questions)*100}%` }} transition={{ duration:0.4 }} /></div>
+        <div style={S.progressTrack}>
+          <motion.div style={S.progressFill}
+            animate={{ width:`${((roundRef.current + 1) / currentStage.questions) * 100}%` }}
+            transition={{ duration:0.4 }} />
+        </div>
         <span style={S.roundText}>Q{roundRef.current+1}/{currentStage.questions}</span>
       </div>
+
       <div style={S.gameArea}>
         <motion.div style={S.questionBox} key={`${stageIndex}-${roundRef.current}`} initial={{ scale:0.8,opacity:0 }} animate={{ scale:1,opacity:1 }} transition={{ type:'spring',bounce:0.4 }}>
           <p style={S.questionLabel}>What letter is this? Say it aloud!</p>
