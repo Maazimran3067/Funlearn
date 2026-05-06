@@ -493,3 +493,6 @@ def platform_stats_view(request):
     })
 def health_check(request):
     return JsonResponse({"status": "ok", "message": "FunLearn AI backend is running"})
+
+def ping_view(request):
+    return JsonResponse({"status": "awake"})

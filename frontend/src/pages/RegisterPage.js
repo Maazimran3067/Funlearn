@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { registerUser, sendOTP, verifyOTP } from '../services/api';
+import { registerUser, sendOTP, verifyOTP, wakeServer } from '../services/api';
 
 const ROLES = [
   { id:'student', emoji:'🎒', label:'Student',  desc:'Play games & learn',  color:'#6366F1', glow:'rgba(99,102,241,0.2)',  border:'rgba(99,102,241,0.4)' },
@@ -248,7 +248,9 @@ export default function RegisterPage() {
   const sendCode = async () => {
     if (!email.trim()) { setErr('Enter your email.'); return; }
     setLoad(true); setErr('');
-    setOk('Sending code... This may take up to 60 seconds if the server is starting up. Please wait ⏳');
+    setOk('Waking up server... please wait ⏳');
+    await wakeServer();
+    setOk('Sending verification code to your email... ⏳');
     try {
       await sendOTP({ email: email.trim().toLowerCase(), role: role.id });
       setOk(`Code sent to ${email}! Check inbox & spam.`);
