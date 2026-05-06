@@ -80,8 +80,35 @@ def send_otp_view(request):
         'created_at': datetime.utcnow(),
     })
 
-    def _try_send(port, use_tls, use_ssl):
-        """Attempt to send OTP email on given port/protocol."""
+    def _try_send_sendgrid_http():
+        """Bypass Render SMTP blocks by using SendGrid's REST API."""
+        import json
+        import urllib.request
+        
+        url = 'https://api.sendgrid.com/v3/mail/send'
+        data = {
+            "personalizations": [{"to": [{"email": email}]}],
+            "from": {"email": settings.DEFAULT_FROM_EMAIL, "name": "FunLearn AI Team"},
+            "subject": "FunLearn AI — Your Verification Code",
+            "content": [{"type": "text/plain", "value": (
+                f'Hello!\n\nYour FunLearn AI verification code is:\n\n'
+                f'  {otp_code}\n\n'
+                f'This code expires in 10 minutes.\n'
+                f'Do not share this code with anyone.\n\n'
+                f'— FunLearn AI Team'
+            )}]
+        }
+        headers = {
+            'Authorization': f'Bearer {settings.EMAIL_HOST_PASSWORD}',
+            'Content-Type': 'application/json'
+        }
+        req = urllib.request.Request(url, data=json.dumps(data).encode('utf-8'), headers=headers, method='POST')
+        with urllib.request.urlopen(req, timeout=5) as response:
+            if response.status not in (200, 202):
+                raise Exception(f"SendGrid API returned status {response.status}")
+
+    def _try_send_smtp(port, use_tls, use_ssl):
+        """Attempt to send OTP email on given port/protocol (SMTP)."""
         from django.core.mail import get_connection
         conn = get_connection(
             backend='users.email_backend.RobustSMTPEmailBackend',
@@ -109,17 +136,31 @@ def send_otp_view(request):
             connection     = conn,
         )
 
+    last_error = None
+    
+    # Check if using SendGrid. If so, use HTTP API to bypass Render's SMTP block!
+    if 'sendgrid' in str(settings.EMAIL_HOST).lower() or str(settings.EMAIL_HOST_PASSWORD).startswith('SG.'):
+        try:
+            logger.info(f'[OTP] Trying SendGrid HTTP API for {email} to bypass SMTP block')
+            _try_send_sendgrid_http()
+            logger.info(f'[OTP] Email sent successfully to {email} via HTTP API')
+            return Response({'message': f'Verification code sent to {email}. Check your inbox and spam folder.'})
+        except Exception as e:
+            tb = traceback.format_exc()
+            logger.warning(f'[OTP] SendGrid HTTP API failed for {email}: {e}\n{tb}')
+            last_error = e
+
+    # Fallback to standard SMTP if HTTP failed or if not using SendGrid
     attempts = [
         (587, True,  False),   # Port 587 STARTTLS  (primary)
         (465, False, True),    # Port 465 SSL       (fallback 1)
-        (2525, True, False),   # Port 2525 STARTTLS (fallback 2, works on some clouds)
+        (2525, True, False),   # Port 2525 STARTTLS (fallback 2)
     ]
 
-    last_error = None
     for port, use_tls, use_ssl in attempts:
         try:
             logger.info(f'[OTP] Trying port {port} for {email}')
-            _try_send(port, use_tls, use_ssl)
+            _try_send_smtp(port, use_tls, use_ssl)
             logger.info(f'[OTP] Email sent successfully to {email} via port {port}')
             return Response({'message': f'Verification code sent to {email}. Check your inbox and spam folder.'})
         except Exception as e:
@@ -128,7 +169,7 @@ def send_otp_view(request):
             last_error = e
 
     # All ports failed
-    logger.error(f'[OTP] All SMTP ports failed for {email}. Last error: {last_error}')
+    logger.error(f'[OTP] All delivery methods failed for {email}. Last error: {last_error}')
     
     # Fallback for Render Free Tier (Demo Mode)
     # Since free tier blocks SMTP, we return the OTP in the response to unblock the FYP presentation
