@@ -103,7 +103,7 @@ def send_otp_view(request):
                 f'Do not share this code with anyone.\n\n'
                 f'— FunLearn AI Team'
             ),
-            from_email     = settings.EMAIL_HOST_USER,
+            from_email     = settings.DEFAULT_FROM_EMAIL,
             recipient_list = [email],
             fail_silently  = False,
             connection     = conn,
