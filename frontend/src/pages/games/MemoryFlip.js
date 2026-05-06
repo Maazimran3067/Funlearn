@@ -163,12 +163,12 @@ export default function MemoryFlip() {
             {STAGES.map((s, i) => {
               const unlocked = unlockedStages.includes(i);
               return (
-                <motion.div key={i} style={{ ...S.stageCard, opacity:unlocked?1:0.5, border:stageIndex===i?'3px solid #7C3AED':'3px solid transparent', background:unlocked?'#EDE9FE':'#F3F4F6' }}
-                  whileHover={unlocked?{scale:1.05}:{}} whileTap={unlocked?{scale:0.95}:{}}
+                <motion.div key={i} style={{ ...S.stageCard, opacity:unlocked?1:0.5, border:stageIndex===i?'2px solid #7C3AED':'1px solid #2D3A4F', background:unlocked?'rgba(124,58,237,0.1)':'#1E293B' }}
+                  whileHover={unlocked?{scale:1.05,borderColor:'rgba(124,58,237,0.5)'}:{}} whileTap={unlocked?{scale:0.95}:{}}
                   onClick={() => { if (unlocked) { setStageIndex(i); setStageOver(false); } }}>
                   <div style={{ fontSize:28 }}>{unlocked?'🃏':'🔒'}</div>
-                  <div style={{ fontSize:13, fontWeight:800, color:unlocked?'#5B21B6':'#9CA3AF' }}>{s.name}</div>
-                  <div style={{ fontSize:11, color:'#6B7280' }}>{s.pairs} pairs • {s.moveLimitMoves} flips max</div>
+                  <div style={{ fontSize:13, fontWeight:800, color:unlocked?'#8B5CF6':'#4B5563', fontFamily:'Nunito,sans-serif' }}>{s.name}</div>
+                  <div style={{ fontSize:11, color:'#64748B', fontFamily:'Nunito,sans-serif' }}>{s.pairs} pairs • {s.moveLimitMoves} flips max</div>
                   <div style={{ fontSize:11, color:'#EF4444', fontWeight:700 }}>⏱️ {s.timeLimitSecs}s</div>
                   {unlocked&&<div style={{ fontSize:11, color:'#10B981', fontWeight:700, marginTop:4 }}>✅ Unlocked</div>}
                 </motion.div>
@@ -216,16 +216,16 @@ export default function MemoryFlip() {
         <div style={S.scoreBadge}>🎯 {matchesRef.current}/{totalPairs}</div>
       </div>
       <div style={S.progressWrap}>
-        <div style={{ padding:'4px 12px', borderRadius:20, fontSize:13, fontWeight:700, background:movesLeft<=5?'#FEE2E2':movesLeft<=12?'#FEF3C7':'#EDE9FE', color:movesLeft<=5?'#991B1B':movesLeft<=12?'#92400E':'#5B21B6' }}>
+        <div style={{ padding:'4px 12px', borderRadius:20, fontSize:13, fontWeight:700, background:movesLeft<=5?'rgba(239,68,68,0.15)':movesLeft<=12?'rgba(245,158,11,0.15)':'rgba(124,58,237,0.15)', color:movesLeft<=5?'#EF4444':movesLeft<=12?'#F59E0B':'#8B5CF6', border:'1px solid', borderColor:movesLeft<=5?'rgba(239,68,68,0.3)':movesLeft<=12?'rgba(245,158,11,0.3)':'rgba(124,58,237,0.3)' }}>
           🃏 {movesLeft} flips left
         </div>
-        <div style={{ padding:'4px 12px', borderRadius:20, fontSize:13, fontWeight:700, background:timeLeft>30?'#D1FAE5':timeLeft>10?'#FEF3C7':'#FEE2E2', color:timeLeft>30?'#065F46':timeLeft>10?'#92400E':'#991B1B' }}>
+        <div style={{ padding:'4px 12px', borderRadius:20, fontSize:13, fontWeight:700, background:timeLeft>30?'rgba(16,185,129,0.15)':timeLeft>10?'rgba(245,158,11,0.15)':'rgba(239,68,68,0.15)', color:timeLeft>30?'#10B981':timeLeft>10?'#F59E0B':'#EF4444', border:'1px solid', borderColor:timeLeft>30?'rgba(16,185,129,0.3)':timeLeft>10?'rgba(245,158,11,0.3)':'rgba(239,68,68,0.3)' }}>
           ⏱️ {timeMin}:{timeSec.toString().padStart(2,'0')}
         </div>
-        <div style={{ fontSize:13, color:'#6B7280', fontWeight:600, marginLeft:'auto' }}>{matchesRef.current}/{totalPairs} pairs</div>
+        <div style={{ fontSize:13, color:'#64748B', fontWeight:600, marginLeft:'auto', fontFamily:'Nunito,sans-serif' }}>{matchesRef.current}/{totalPairs} pairs</div>
       </div>
       {phase === 'preview' && (
-        <div style={{ background:'#FEF3C7', padding:'10px', textAlign:'center', fontSize:15, fontWeight:700, color:'#92400E' }}>
+        <div style={{ background:'rgba(245,158,11,0.12)', padding:'10px', textAlign:'center', fontSize:15, fontWeight:700, color:'#F59E0B', border:'1px solid rgba(245,158,11,0.2)' }}>
           👀 Memorise the cards! Hiding soon...
         </div>
       )}
@@ -253,31 +253,31 @@ export default function MemoryFlip() {
 }
 
 const S = {
-  loadScreen:  { minHeight:'100vh', display:'flex', alignItems:'center', justifyContent:'center', background:'#F5F3FF', fontSize:18 },
-  page:        { minHeight:'100vh', background:'#F5F3FF', display:'flex', flexDirection:'column' },
-  header:      { background:'#fff', padding:'14px 24px', display:'flex', alignItems:'center', justifyContent:'space-between', boxShadow:'0 2px 12px rgba(124,58,237,0.08)' },
-  backBtn:     { background:'#EDE9FE', color:'#7C3AED', border:'none', padding:'8px 16px', borderRadius:12, fontSize:14, fontWeight:700, cursor:'pointer', fontFamily:'Nunito,sans-serif' },
-  headerTitle: { fontSize:20, fontWeight:900, color:'#1F1F2E' },
-  scoreBadge:  { background:'#EDE9FE', color:'#7C3AED', padding:'6px 14px', borderRadius:20, fontSize:14, fontWeight:700 },
-  progressWrap:{ padding:'10px 24px', background:'#fff', borderBottom:'1px solid #F3F4F6', display:'flex', alignItems:'center', gap:10, flexWrap:'wrap' },
+  loadScreen:  { minHeight:'100vh', display:'flex', alignItems:'center', justifyContent:'center', background:'#0B1120', fontSize:18, color:'#94A3B8', fontFamily:'Nunito,sans-serif' },
+  page:        { minHeight:'100vh', background:'#0B1120', display:'flex', flexDirection:'column' },
+  header:      { background:'#1E293B', padding:'14px 24px', display:'flex', alignItems:'center', justifyContent:'space-between', borderBottom:'1px solid #2D3A4F' },
+  backBtn:     { background:'rgba(124,58,237,0.12)', color:'#8B5CF6', border:'1px solid rgba(124,58,237,0.3)', padding:'8px 16px', borderRadius:12, fontSize:14, fontWeight:700, cursor:'pointer', fontFamily:'Nunito,sans-serif' },
+  headerTitle: { fontSize:20, fontWeight:900, color:'#F1F5F9', fontFamily:'Nunito,sans-serif' },
+  scoreBadge:  { background:'rgba(124,58,237,0.15)', color:'#8B5CF6', padding:'6px 14px', borderRadius:20, fontSize:14, fontWeight:700, border:'1px solid rgba(124,58,237,0.3)', fontFamily:'Nunito,sans-serif' },
+  progressWrap:{ padding:'10px 24px', background:'#1E293B', borderBottom:'1px solid #2D3A4F', display:'flex', alignItems:'center', gap:10, flexWrap:'wrap' },
   gameArea:    { flex:1, display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', padding:'16px', gap:16 },
   card:        { aspectRatio:'1', borderRadius:14, display:'flex', alignItems:'center', justifyContent:'center', transition:'background 0.2s', minHeight:56 },
   stageArea:   { flex:1, display:'flex', flexDirection:'column', alignItems:'center', padding:'32px 20px' },
-  stageTitle:  { fontSize:24, fontWeight:900, color:'#1F1F2E', margin:'0 0 8px' },
-  stageSub:    { fontSize:14, color:'#6B7280', marginBottom:28, textAlign:'center', maxWidth:480 },
+  stageTitle:  { fontSize:24, fontWeight:900, color:'#F1F5F9', margin:'0 0 8px', fontFamily:'Nunito,sans-serif' },
+  stageSub:    { fontSize:14, color:'#64748B', marginBottom:28, textAlign:'center', maxWidth:480, fontFamily:'Nunito,sans-serif' },
   stagesGrid:  { display:'grid', gridTemplateColumns:'repeat(auto-fit,minmax(150px,1fr))', gap:16, width:'100%', maxWidth:800, marginBottom:28 },
-  stageCard:   { borderRadius:20, padding:'20px 16px', textAlign:'center', cursor:'pointer', transition:'all 0.2s', boxShadow:'0 4px 16px rgba(0,0,0,0.06)' },
+  stageCard:   { borderRadius:20, padding:'20px 16px', textAlign:'center', cursor:'pointer', transition:'all 0.2s' },
   startBtn:    { color:'#fff', border:'none', padding:'16px 40px', borderRadius:18, fontSize:18, fontWeight:800, cursor:'pointer', fontFamily:'Nunito,sans-serif' },
-  resultCard:  { background:'#fff', borderRadius:32, padding:'40px 36px', textAlign:'center', maxWidth:460, width:'90%', margin:'6vh auto', boxShadow:'0 20px 60px rgba(124,58,237,0.15)' },
-  resultTitle: { fontSize:30, fontWeight:900, color:'#1F1F2E', margin:'12px 0 8px' },
-  resultScore: { fontSize:16, color:'#6B7280', margin:'0 0 8px' },
-  resultPct:   { fontSize:64, fontWeight:900, color:'#7C3AED' },
+  resultCard:  { background:'#1E293B', border:'1px solid #2D3A4F', borderRadius:32, padding:'40px 36px', textAlign:'center', maxWidth:460, width:'90%', margin:'6vh auto', boxShadow:'0 20px 60px rgba(0,0,0,0.5)' },
+  resultTitle: { fontSize:30, fontWeight:900, color:'#F1F5F9', margin:'12px 0 8px', fontFamily:'Nunito,sans-serif' },
+  resultScore: { fontSize:16, color:'#94A3B8', margin:'0 0 8px', fontFamily:'Nunito,sans-serif' },
+  resultPct:   { fontSize:64, fontWeight:900, color:'#7C3AED', fontFamily:'Nunito,sans-serif' },
   starsRow:    { display:'flex', justifyContent:'center', gap:8, margin:'12px 0 16px' },
-  unlockedBox: { background:'#D1FAE5', color:'#065F46', borderRadius:12, padding:'10px 20px', fontSize:14, fontWeight:800, marginBottom:16 },
-  aiBox:       { background:'#EFF6FF', borderRadius:14, padding:'14px 16px', marginBottom:20, border:'2px solid #BFDBFE', textAlign:'left', width:'100%' },
-  aiRow:       { display:'flex', alignItems:'center', gap:8, marginBottom:6, fontWeight:600 },
-  aiText:      { fontSize:13, color:'#1E40AF', lineHeight:1.6, margin:0, fontWeight:600 },
+  unlockedBox: { background:'rgba(16,185,129,0.15)', color:'#6EE7B7', border:'1px solid rgba(16,185,129,0.3)', borderRadius:12, padding:'10px 20px', fontSize:14, fontWeight:800, marginBottom:16, fontFamily:'Nunito,sans-serif' },
+  aiBox:       { background:'rgba(99,102,241,0.08)', borderRadius:14, padding:'14px 16px', marginBottom:20, border:'1px solid rgba(99,102,241,0.2)', textAlign:'left', width:'100%' },
+  aiRow:       { display:'flex', alignItems:'center', gap:8, marginBottom:6, fontWeight:600, color:'#94A3B8', fontFamily:'Nunito,sans-serif' },
+  aiText:      { fontSize:13, color:'#94A3B8', lineHeight:1.6, margin:0, fontWeight:600, fontFamily:'Nunito,sans-serif' },
   resultBtns:  { display:'flex', gap:12, justifyContent:'center' },
-  playBtn:     { background:'linear-gradient(135deg,#7C3AED,#06B6D4)', color:'#fff', border:'none', padding:'14px 24px', borderRadius:16, fontSize:16, fontWeight:800, cursor:'pointer', fontFamily:'Nunito,sans-serif' },
-  homeBtn:     { background:'#F3F4F6', color:'#4B5563', border:'none', padding:'14px 24px', borderRadius:16, fontSize:16, fontWeight:800, cursor:'pointer', fontFamily:'Nunito,sans-serif' },
+  playBtn:     { background:'linear-gradient(135deg,#7C3AED,#06B6D4)', color:'#fff', border:'none', padding:'14px 24px', borderRadius:16, fontSize:16, fontWeight:800, cursor:'pointer', fontFamily:'Nunito,sans-serif', boxShadow:'0 4px 15px rgba(124,58,237,0.4)' },
+  homeBtn:     { background:'rgba(30,41,59,0.8)', color:'#94A3B8', border:'1px solid #2D3A4F', padding:'14px 24px', borderRadius:16, fontSize:16, fontWeight:800, cursor:'pointer', fontFamily:'Nunito,sans-serif' },
 };

@@ -162,12 +162,13 @@ export default function AnimalSoundsGame() {
             return (
               <motion.div key={i}
                 style={{ ...S.stageCard, opacity:unlocked?1:0.5,
-                  border: stageIdx===i ? '3px solid #8B5CF6' : '3px solid transparent',
-                  background: unlocked ? '#EDE9FE' : '#F3F4F6' }}
+                  border: stageIdx===i ? '2px solid #8B5CF6' : '1px solid #2D3A4F',
+                  background: unlocked ? 'rgba(139,92,246,0.1)' : '#1E293B' }}
+                whileHover={unlocked ? { scale:1.05, borderColor:'rgba(139,92,246,0.5)' } : {}}
                 whileTap={unlocked ? { scale:0.95 } : {}}
                 onClick={() => { if (unlocked) setStageIdx(i); }}>
                 <div style={{ fontSize:32 }}>{unlocked ? '🔊' : '🔒'}</div>
-                <div style={{ fontSize:15, fontWeight:800, color: unlocked?'#7C3AED':'#9CA3AF' }}>{s.label}</div>
+                <div style={{ fontSize:15, fontWeight:800, color: unlocked?'#8B5CF6':'#4B5563', fontFamily:'Nunito,sans-serif' }}>{s.label}</div>
                 {unlocked && <div style={{ fontSize:11, color:'#10B981', fontWeight:700 }}>✅ Open</div>}
               </motion.div>
             );
@@ -184,6 +185,7 @@ export default function AnimalSoundsGame() {
   if (screen === 'result') {
     const pct = Math.round((scoreRef.current / TOTAL) * 100);
     const passed = pct >= STAGES[stageIdx].passMark;
+    const stars = pct >= 90 ? 3 : pct >= 70 ? 2 : 1;
     return (
       <div style={S.page}>
         <motion.div style={S.resultCard} initial={{ scale:0.8, opacity:0 }} animate={{ scale:1, opacity:1 }}>
@@ -191,12 +193,14 @@ export default function AnimalSoundsGame() {
           <h1 style={S.resultTitle}>{passed ? 'Well Done! 🎉' : 'Keep Trying!'}</h1>
           <div style={S.resultPct}>{pct}%</div>
           <p style={S.resultScore}>{scoreRef.current} / {TOTAL} Correct</p>
+          <div style={S.starsRow}>{[1,2,3].map(n=><span key={n} style={{ fontSize:32, opacity:pct>=n*30?1:0.25 }}>⭐</span>)}</div>
+          {passed && stageIdx+1 < STAGES.length && <div style={S.unlockedBox}>🎉 {STAGES[stageIdx+1].label} Unlocked!</div>}
           <div style={S.aiBox}>
-            {loadingAI ? <div>🤖 AI analyzing...</div> : <p style={S.aiText}>{aiFeedback}</p>}
+            {loadingAI ? <div style={{ color:'#94A3B8', fontFamily:'Nunito,sans-serif' }}>🤖 AI analyzing...</div> : <p style={S.aiText}>{aiFeedback}</p>}
           </div>
           <div style={S.resultBtns}>
-            <motion.button style={S.playBtn} onClick={() => setScreen('stages')}>Stages 🚀</motion.button>
-            <motion.button style={S.homeBtn} onClick={() => navigate('/student/dashboard')}>Home 🏠</motion.button>
+            <motion.button style={S.playBtn} whileHover={{ scale:1.04 }} onClick={() => setScreen('stages')}>Stages 🚀</motion.button>
+            <motion.button style={S.homeBtn} whileHover={{ scale:1.04 }} onClick={() => navigate('/student/dashboard')}>Home 🏠</motion.button>
           </div>
         </motion.div>
       </div>
@@ -229,13 +233,14 @@ export default function AnimalSoundsGame() {
             <motion.button key={i}
               style={{
                 ...S.optionBtn,
-                background: feedback ? (opt.name === question.correct.name ? '#D1FAE5' : (feedback.chosen === opt.name ? '#FEE2E2' : '#fff')) : '#fff',
-                borderColor: feedback ? (opt.name === question.correct.name ? '#10B981' : (feedback.chosen === opt.name ? '#EF4444' : '#E5E7EB')) : '#E5E7EB'
+                background: feedback ? (opt.name === question.correct.name ? 'rgba(16,185,129,0.2)' : (feedback.chosen === opt.name ? 'rgba(239,68,68,0.15)' : '#1E293B')) : '#1E293B',
+                borderColor: feedback ? (opt.name === question.correct.name ? '#10B981' : (feedback.chosen === opt.name ? '#EF4444' : '#2D3A4F')) : '#2D3A4F',
+                color: feedback && opt.name === question.correct.name ? '#6EE7B7' : '#F1F5F9'
               }}
-              whileHover={!feedback ? { scale:1.02 } : {}}
+              whileHover={!feedback ? { scale:1.02, borderColor:'rgba(139,92,246,0.5)', background:'rgba(139,92,246,0.1)' } : {}}
               onClick={() => handlePick(opt)}>
               <div style={{ fontSize:40 }}>{opt.emoji}</div>
-              <div style={{ fontWeight:700 }}>{opt.name}</div>
+              <div style={{ fontWeight:700, fontFamily:'Nunito,sans-serif' }}>{opt.name}</div>
             </motion.button>
           ))}
         </div>
@@ -251,35 +256,38 @@ export default function AnimalSoundsGame() {
 }
 
 const S = {
-  loadScreen: { minHeight:'100vh', display:'flex', alignItems:'center', justifyContent:'center', background:'#FDF4FF' },
-  page:        { minHeight:'100vh', background:'#FDF4FF', display:'flex', flexDirection:'column' },
-  header:      { background:'#fff', padding:'14px 24px', display:'flex', alignItems:'center', justifyContent:'space-between', boxShadow:'0 2px 10px rgba(0,0,0,0.05)' },
-  backBtn:     { background:'#EDE9FE', color:'#7C3AED', border:'none', padding:'8px 16px', borderRadius:12, fontWeight:700, cursor:'pointer' },
-  headerTitle: { fontSize:20, fontWeight:900, color:'#1F1F2E' },
-  scoreBadge:  { background:'#FEF3C7', color:'#D97706', padding:'6px 14px', borderRadius:20, fontWeight:700 },
-  progressWrap:{ padding:'10px 24px', background:'#fff' },
-  progressTrack:{ height:8, background:'#EDE9FE', borderRadius:10, overflow:'hidden' },
-  progressFill:{ height:'100%', background:'#8B5CF6' },
+  loadScreen: { minHeight:'100vh', display:'flex', alignItems:'center', justifyContent:'center', background:'#0B1120', color:'#94A3B8', fontFamily:'Nunito,sans-serif' },
+  page:        { minHeight:'100vh', background:'#0B1120', display:'flex', flexDirection:'column' },
+  header:      { background:'#1E293B', padding:'14px 24px', display:'flex', alignItems:'center', justifyContent:'space-between', borderBottom:'1px solid #2D3A4F' },
+  backBtn:     { background:'rgba(139,92,246,0.12)', color:'#8B5CF6', border:'1px solid rgba(139,92,246,0.3)', padding:'8px 16px', borderRadius:12, fontWeight:700, cursor:'pointer', fontFamily:'Nunito,sans-serif' },
+  headerTitle: { fontSize:20, fontWeight:900, color:'#F1F5F9', fontFamily:'Nunito,sans-serif' },
+  scoreBadge:  { background:'rgba(245,158,11,0.15)', color:'#F59E0B', padding:'6px 14px', borderRadius:20, fontWeight:700, border:'1px solid rgba(245,158,11,0.3)', fontFamily:'Nunito,sans-serif' },
+  progressWrap:{ padding:'10px 24px', background:'#1E293B', borderBottom:'1px solid #2D3A4F' },
+  progressTrack:{ height:8, background:'#2D3A4F', borderRadius:10, overflow:'hidden' },
+  progressFill:{ height:'100%', background:'linear-gradient(90deg,#8B5CF6,#EC4899)' },
   gameArea:    { flex:1, display:'flex', flexDirection:'column', alignItems:'center', padding:'20px', gap:15, justifyContent:'center' },
-  questionBox: { background:'#fff', borderRadius:24, padding:'25px', textAlign:'center', boxShadow:'0 8px 30px rgba(0,0,0,0.05)', width:'100%', maxWidth:380 },
-  questionLabel:{ fontSize:14, color:'#6B7280', fontWeight:700 },
-  soundText:   { fontSize:40, fontWeight:900, color:'#7C3AED', margin:'10px 0' },
+  questionBox: { background:'#1E293B', border:'1px solid #2D3A4F', borderRadius:24, padding:'25px', textAlign:'center', boxShadow:'0 8px 30px rgba(0,0,0,0.3)', width:'100%', maxWidth:380 },
+  questionLabel:{ fontSize:14, color:'#94A3B8', fontWeight:700, fontFamily:'Nunito,sans-serif' },
+  soundText:   { fontSize:40, fontWeight:900, color:'#8B5CF6', margin:'10px 0', fontFamily:'Nunito,sans-serif' },
   optionsGrid: { display:'grid', gridTemplateColumns:'1fr 1fr', gap:12, width:'100%', maxWidth:380 },
-  optionBtn:   { padding:'15px', borderRadius:18, border:'2px solid #E5E7EB', cursor:'pointer', fontFamily:'inherit' },
-  voiceBtn:    { width:'100%', maxWidth:380, padding:'15px', borderRadius:15, border:'none', color:'#fff', fontWeight:800, cursor:'pointer' },
-  heardTxt:    { fontSize:13, color:'#6B7280' },
+  optionBtn:   { padding:'15px', borderRadius:18, border:'1px solid #2D3A4F', cursor:'pointer', fontFamily:'inherit', background:'#1E293B', color:'#F1F5F9' },
+  voiceBtn:    { width:'100%', maxWidth:380, padding:'15px', borderRadius:15, border:'none', color:'#fff', fontWeight:800, cursor:'pointer', fontFamily:'Nunito,sans-serif' },
+  heardTxt:    { fontSize:13, color:'#64748B', fontFamily:'Nunito,sans-serif' },
   stageArea:   { flex:1, display:'flex', flexDirection:'column', alignItems:'center', padding:'30px 20px' },
-  stageTitle:  { fontSize:24, fontWeight:900 },
-  stageSub:    { color:'#6B7280', marginBottom:30 },
+  stageTitle:  { fontSize:24, fontWeight:900, color:'#F1F5F9', fontFamily:'Nunito,sans-serif' },
+  stageSub:    { color:'#64748B', marginBottom:30, fontFamily:'Nunito,sans-serif' },
   stagesGrid:  { display:'grid', gridTemplateColumns:'repeat(auto-fit,minmax(120px,1fr))', gap:15, width:'100%', maxWidth:500, marginBottom:30 },
-  stageCard:   { borderRadius:20, padding:'20px', textAlign:'center', cursor:'pointer', boxShadow:'0 4px 10px rgba(0,0,0,0.05)' },
-  startBtn:    { color:'#fff', padding:'15px 40px', borderRadius:15, fontSize:18, fontWeight:800, border:'none' },
-  resultCard:  { background:'#fff', borderRadius:30, padding:'40px', textAlign:'center', maxWidth:400, margin:'auto', boxShadow:'0 20px 50px rgba(0,0,0,0.1)' },
-  resultTitle: { fontSize:28, fontWeight:900 },
-  resultPct:   { fontSize:60, fontWeight:900, color:'#8B5CF6' },
-  aiBox:       { background:'#F8FAFC', padding:'15px', borderRadius:15, margin:'20px 0', textAlign:'left' },
-  aiText:      { fontSize:13, color:'#475569', lineHeight:1.5 },
+  stageCard:   { borderRadius:20, padding:'20px', textAlign:'center', cursor:'pointer' },
+  startBtn:    { color:'#fff', padding:'15px 40px', borderRadius:15, fontSize:18, fontWeight:800, border:'none', fontFamily:'Nunito,sans-serif' },
+  resultCard:  { background:'#1E293B', border:'1px solid #2D3A4F', borderRadius:30, padding:'40px', textAlign:'center', maxWidth:400, margin:'auto', boxShadow:'0 20px 50px rgba(0,0,0,0.5)' },
+  resultTitle: { fontSize:28, fontWeight:900, color:'#F1F5F9', fontFamily:'Nunito,sans-serif' },
+  resultPct:   { fontSize:60, fontWeight:900, color:'#8B5CF6', fontFamily:'Nunito,sans-serif' },
+  resultScore: { fontSize:16, color:'#94A3B8', fontFamily:'Nunito,sans-serif' },
+  starsRow:    { display:'flex', justifyContent:'center', gap:8, margin:'12px 0' },
+  unlockedBox: { background:'rgba(16,185,129,0.15)', color:'#6EE7B7', border:'1px solid rgba(16,185,129,0.3)', borderRadius:12, padding:'10px 20px', fontSize:14, fontWeight:800, marginBottom:16, fontFamily:'Nunito,sans-serif' },
+  aiBox:       { background:'rgba(99,102,241,0.08)', padding:'15px', borderRadius:15, margin:'20px 0', textAlign:'left', border:'1px solid rgba(99,102,241,0.2)' },
+  aiText:      { fontSize:13, color:'#94A3B8', lineHeight:1.5, fontFamily:'Nunito,sans-serif' },
   resultBtns:  { display:'flex', gap:10, justifyContent:'center' },
-  playBtn:     { background:'#8B5CF6', color:'#fff', padding:'12px 20px', borderRadius:12, border:'none', fontWeight:700 },
-  homeBtn:     { background:'#F1F5F9', color:'#475569', padding:'12px 20px', borderRadius:12, border:'none', fontWeight:700 },
+  playBtn:     { background:'linear-gradient(135deg,#8B5CF6,#EC4899)', color:'#fff', padding:'12px 20px', borderRadius:12, border:'none', fontWeight:700, cursor:'pointer', fontFamily:'Nunito,sans-serif', boxShadow:'0 4px 15px rgba(139,92,246,0.4)' },
+  homeBtn:     { background:'rgba(30,41,59,0.8)', color:'#94A3B8', padding:'12px 20px', borderRadius:12, border:'1px solid #2D3A4F', fontWeight:700, cursor:'pointer', fontFamily:'Nunito,sans-serif' },
 };

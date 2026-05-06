@@ -99,18 +99,33 @@ export default function PatternQuestGame() {
       alignItems:'center', justifyContent:'center' }}>
       <motion.div initial={{ scale:0.85, opacity:0 }} animate={{ scale:1, opacity:1 }}
         style={{ background:'#1E293B', border:'1px solid #2D3A4F', borderRadius:24,
-          padding:'40px', textAlign:'center', maxWidth:360 }}>
-        <div style={{ fontSize:52, marginBottom:12 }}>{pct>=70?'🎉':'💪'}</div>
-        <div style={{ fontSize:22, fontWeight:900, color:'#F1F5F9', fontFamily:'Nunito,sans-serif' }}>
-          {pct>=70?'Pattern Master!':'Try Again!'}</div>
-        <div style={{ fontSize:40, fontWeight:900, color:'#EC4899', fontFamily:'Nunito,sans-serif', margin:'12px 0' }}>
+          padding:'40px', textAlign:'center', maxWidth:400, width:'100%',
+          boxShadow:'0 20px 60px rgba(0,0,0,0.5)' }}>
+        <div style={{ fontSize:64, marginBottom:8 }}>{pct>=70?'🏆':'💪'}</div>
+        <div style={{ fontSize:22, fontWeight:900, color:'#F1F5F9', fontFamily:'Nunito,sans-serif', marginBottom:6 }}>
+          {pct>=70?'Stage Passed! 🎉':'Try Again!'}</div>
+        <div style={{ fontSize:48, fontWeight:900, color:'#EC4899', fontFamily:'Nunito,sans-serif', margin:'8px 0' }}>
           {pct}%</div>
-        <div style={{ display:'flex', gap:10, justifyContent:'center', marginTop:20 }}>
+        <div style={{ fontSize:14, color:'#94A3B8', fontFamily:'Nunito,sans-serif', marginBottom:12 }}>
+          {score} / {TOTAL} correct</div>
+        <div style={{ display:'flex', justifyContent:'center', gap:8, marginBottom:16 }}>
+          {[1,2,3].map(n => <span key={n} style={{ fontSize:32, opacity: pct>=n*30?1:0.25 }}>⭐</span>)}
+        </div>
+        {pct>=70 && stageIdx+1 < STAGES.length && (
+          <div style={{ background:'rgba(16,185,129,0.15)', color:'#6EE7B7',
+            border:'1px solid rgba(16,185,129,0.3)', borderRadius:12,
+            padding:'10px 20px', fontSize:14, fontWeight:800, marginBottom:16,
+            fontFamily:'Nunito,sans-serif' }}>
+            🎉 {STAGES[stageIdx+1].label} Unlocked!
+          </div>
+        )}
+        <div style={{ display:'flex', gap:10, justifyContent:'center', marginTop:8 }}>
           <motion.button whileHover={{ scale:1.04 }} whileTap={{ scale:0.96 }}
             onClick={()=>startStage(stageIdx)}
             style={{ padding:'10px 22px', borderRadius:12, border:'none',
               background:'linear-gradient(135deg,#EC4899,#F472B6)', color:'#fff',
-              fontSize:14, fontWeight:800, cursor:'pointer', fontFamily:'Nunito,sans-serif' }}>
+              fontSize:14, fontWeight:800, cursor:'pointer', fontFamily:'Nunito,sans-serif',
+              boxShadow:'0 4px 15px rgba(236,72,153,0.35)' }}>
             Retry</motion.button>
           <motion.button whileHover={{ scale:1.04 }} whileTap={{ scale:0.96 }}
             onClick={()=>setScreen('stages')}

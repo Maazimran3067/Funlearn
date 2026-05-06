@@ -107,7 +107,7 @@ export default function ShapeSorter() {
 
   useEffect(() => { if (stageOver) handleStageComplete(); }, [stageOver]);
 
-  if (!loaded) return <div style={{ minHeight:'100vh', display:'flex', alignItems:'center', justifyContent:'center', background:'#EFF6FF', fontSize:18 }}>Loading... ✨</div>;
+  if (!loaded) return <div style={{ minHeight:'100vh', display:'flex', alignItems:'center', justifyContent:'center', background:'#0B1120', fontSize:18, color:'#94A3B8', fontFamily:'Nunito,sans-serif' }}>Loading... ✨</div>;
 
   if (!playing) {
     return (
@@ -119,17 +119,17 @@ export default function ShapeSorter() {
         </div>
         <div style={S.stageArea}>
           <h2 style={S.stageTitle}>Choose Your Stage</h2>
-          <p style={S.stageSub}>The shape is shown — name it! Text-only options. Score 70% to unlock next stage! ✨</p>
+          <p style={S.stageSub}>The shape is shown — name it! Score 70% to unlock next stage! ✨</p>
           <div style={S.stagesGrid}>
             {STAGES.map((s, i) => {
               const unlocked = unlockedStages.includes(i);
               return (
-                <motion.div key={i} style={{ ...S.stageCard, opacity:unlocked?1:0.5, border:stageIndex===i?'3px solid #3B82F6':'3px solid transparent', background:unlocked?'#DBEAFE':'#F3F4F6' }}
-                  whileHover={unlocked?{scale:1.05}:{}} whileTap={unlocked?{scale:0.95}:{}}
+                <motion.div key={i} style={{ ...S.stageCard, opacity:unlocked?1:0.5, border:stageIndex===i?'2px solid #3B82F6':'1px solid #2D3A4F', background:unlocked?'rgba(59,130,246,0.1)':'#1E293B' }}
+                  whileHover={unlocked?{scale:1.05,borderColor:'rgba(59,130,246,0.5)'}:{}} whileTap={unlocked?{scale:0.95}:{}}
                   onClick={() => { if (unlocked) { setStageIndex(i); setStageOver(false); } }}>
                   <div style={{ fontSize:32 }}>{unlocked ? '🔵' : '🔒'}</div>
-                  <div style={{ fontSize:15, fontWeight:800, color:unlocked?'#1E40AF':'#9CA3AF' }}>{s.name}</div>
-                  <div style={{ fontSize:12, color:'#6B7280' }}>{s.shapeNames.join(', ')}</div>
+                  <div style={{ fontSize:15, fontWeight:800, color:unlocked?'#3B82F6':'#4B5563', fontFamily:'Nunito,sans-serif' }}>{s.name}</div>
+                  <div style={{ fontSize:12, color:'#64748B', fontFamily:'Nunito,sans-serif' }}>{s.shapeNames.join(', ')}</div>
                   {unlocked && <div style={{ fontSize:11, color:'#10B981', fontWeight:700, marginTop:4 }}>✅ Unlocked</div>}
                 </motion.div>
               );
@@ -207,38 +207,38 @@ export default function ShapeSorter() {
 }
 
 const S = {
-  page:        { minHeight:'100vh', background:'#EFF6FF', display:'flex', flexDirection:'column' },
-  header:      { background:'#fff', padding:'14px 24px', display:'flex', alignItems:'center', justifyContent:'space-between', boxShadow:'0 2px 12px rgba(59,130,246,0.08)' },
-  backBtn:     { background:'#DBEAFE', color:'#3B82F6', border:'none', padding:'8px 16px', borderRadius:12, fontSize:14, fontWeight:700, cursor:'pointer', fontFamily:'Nunito,sans-serif' },
-  headerTitle: { fontSize:20, fontWeight:900, color:'#1F1F2E' },
-  scoreBadge:  { background:'#FEF3C7', color:'#D97706', padding:'6px 14px', borderRadius:20, fontSize:14, fontWeight:700 },
-  progressWrap:{ padding:'12px 24px', background:'#fff', borderBottom:'1px solid #F3F4F6', display:'flex', alignItems:'center', gap:12 },
-  progressTrack:{ flex:1, height:10, background:'#DBEAFE', borderRadius:10, overflow:'hidden' },
+  page:        { minHeight:'100vh', background:'#0B1120', display:'flex', flexDirection:'column' },
+  header:      { background:'#1E293B', padding:'14px 24px', display:'flex', alignItems:'center', justifyContent:'space-between', borderBottom:'1px solid #2D3A4F' },
+  backBtn:     { background:'rgba(59,130,246,0.12)', color:'#3B82F6', border:'1px solid rgba(59,130,246,0.3)', padding:'8px 16px', borderRadius:12, fontSize:14, fontWeight:700, cursor:'pointer', fontFamily:'Nunito,sans-serif' },
+  headerTitle: { fontSize:20, fontWeight:900, color:'#F1F5F9', fontFamily:'Nunito,sans-serif' },
+  scoreBadge:  { background:'rgba(245,158,11,0.15)', color:'#F59E0B', padding:'6px 14px', borderRadius:20, fontSize:14, fontWeight:700, border:'1px solid rgba(245,158,11,0.3)' },
+  progressWrap:{ padding:'12px 24px', background:'#1E293B', borderBottom:'1px solid #2D3A4F', display:'flex', alignItems:'center', gap:12 },
+  progressTrack:{ flex:1, height:8, background:'#2D3A4F', borderRadius:10, overflow:'hidden' },
   progressFill:{ height:'100%', background:'linear-gradient(90deg,#3B82F6,#8B5CF6)', borderRadius:10 },
-  roundText:   { fontSize:13, fontWeight:700, color:'#3B82F6', whiteSpace:'nowrap' },
+  roundText:   { fontSize:13, fontWeight:700, color:'#3B82F6', whiteSpace:'nowrap', fontFamily:'Nunito,sans-serif' },
   gameArea:    { flex:1, display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', padding:'28px 20px', gap:20 },
-  questionBox: { background:'#fff', borderRadius:28, padding:'28px 40px', textAlign:'center', boxShadow:'0 8px 32px rgba(59,130,246,0.12)' },
-  questionLabel:{ fontSize:16, color:'#6B7280', fontWeight:700, margin:'0 0 16px' },
-  hintBox:     { background:'#EFF6FF', color:'#1E40AF', borderRadius:14, padding:'10px 20px', fontSize:14, fontWeight:700, border:'2px solid #BFDBFE' },
-  feedbackBubble:{ padding:'12px 28px', borderRadius:16, fontSize:16, fontWeight:800 },
+  questionBox: { background:'#1E293B', border:'1px solid #2D3A4F', borderRadius:28, padding:'28px 40px', textAlign:'center', boxShadow:'0 8px 32px rgba(0,0,0,0.3)' },
+  questionLabel:{ fontSize:16, color:'#94A3B8', fontWeight:700, margin:'0 0 16px', fontFamily:'Nunito,sans-serif' },
+  hintBox:     { background:'rgba(99,102,241,0.1)', color:'#818CF8', borderRadius:14, padding:'10px 20px', fontSize:14, fontWeight:700, border:'1px solid rgba(99,102,241,0.3)', fontFamily:'Nunito,sans-serif' },
+  feedbackBubble:{ padding:'12px 28px', borderRadius:16, fontSize:16, fontWeight:800, fontFamily:'Nunito,sans-serif' },
   choicesGrid: { display:'grid', gridTemplateColumns:'1fr 1fr', gap:14, width:'100%', maxWidth:380 },
-  nameBtn:     { padding:'22px 16px', borderRadius:16, border:'none', cursor:'pointer', fontSize:18, fontWeight:900, fontFamily:'Nunito,sans-serif', boxShadow:'0 4px 12px rgba(0,0,0,0.1)' },
+  nameBtn:     { padding:'22px 16px', borderRadius:16, border:'none', cursor:'pointer', fontSize:18, fontWeight:900, fontFamily:'Nunito,sans-serif', boxShadow:'0 4px 12px rgba(0,0,0,0.2)' },
   stageArea:   { flex:1, display:'flex', flexDirection:'column', alignItems:'center', padding:'32px 20px' },
-  stageTitle:  { fontSize:24, fontWeight:900, color:'#1F1F2E', margin:'0 0 8px' },
-  stageSub:    { fontSize:14, color:'#6B7280', marginBottom:28, textAlign:'center' },
+  stageTitle:  { fontSize:24, fontWeight:900, color:'#F1F5F9', margin:'0 0 8px', fontFamily:'Nunito,sans-serif' },
+  stageSub:    { fontSize:14, color:'#64748B', marginBottom:28, textAlign:'center', fontFamily:'Nunito,sans-serif' },
   stagesGrid:  { display:'grid', gridTemplateColumns:'repeat(auto-fit,minmax(140px,1fr))', gap:16, width:'100%', maxWidth:700, marginBottom:28 },
-  stageCard:   { borderRadius:20, padding:'20px 16px', textAlign:'center', cursor:'pointer', transition:'all 0.2s', boxShadow:'0 4px 16px rgba(0,0,0,0.06)' },
-  startBtn:    { color:'#fff', border:'none', padding:'16px 40px', borderRadius:18, fontSize:18, fontWeight:800, cursor:'pointer', fontFamily:'Nunito,sans-serif' },
-  resultCard:  { background:'#fff', borderRadius:32, padding:'40px 36px', textAlign:'center', maxWidth:460, width:'90%', margin:'6vh auto', boxShadow:'0 20px 60px rgba(59,130,246,0.15)' },
-  resultTitle: { fontSize:32, fontWeight:900, color:'#1F1F2E', margin:'12px 0 8px' },
-  resultScore: { fontSize:18, color:'#6B7280', margin:'0 0 8px' },
-  resultPct:   { fontSize:64, fontWeight:900, color:'#3B82F6' },
+  stageCard:   { borderRadius:20, padding:'20px 16px', textAlign:'center', cursor:'pointer', transition:'all 0.2s' },
+  startBtn:    { color:'#fff', border:'none', padding:'16px 40px', borderRadius:18, fontSize:18, fontWeight:800, cursor:'pointer', fontFamily:'Nunito,sans-serif', boxShadow:'0 4px 20px rgba(59,130,246,0.4)' },
+  resultCard:  { background:'#1E293B', border:'1px solid #2D3A4F', borderRadius:32, padding:'40px 36px', textAlign:'center', maxWidth:460, width:'90%', margin:'6vh auto', boxShadow:'0 20px 60px rgba(0,0,0,0.5)' },
+  resultTitle: { fontSize:32, fontWeight:900, color:'#F1F5F9', margin:'12px 0 8px', fontFamily:'Nunito,sans-serif' },
+  resultScore: { fontSize:18, color:'#94A3B8', margin:'0 0 8px', fontFamily:'Nunito,sans-serif' },
+  resultPct:   { fontSize:64, fontWeight:900, color:'#3B82F6', fontFamily:'Nunito,sans-serif' },
   starsRow:    { display:'flex', justifyContent:'center', gap:8, margin:'12px 0 12px' },
-  unlockedBox: { background:'#D1FAE5', color:'#065F46', borderRadius:12, padding:'10px 20px', fontSize:14, fontWeight:800, marginBottom:16 },
-  aiBox:       { background:'#EFF6FF', borderRadius:14, padding:'14px 16px', marginBottom:20, border:'2px solid #BFDBFE', textAlign:'left', width:'100%' },
-  aiRow:       { display:'flex', alignItems:'center', gap:8, marginBottom:6, fontWeight:600 },
-  aiText:      { fontSize:13, color:'#1E40AF', lineHeight:1.6, margin:0, fontWeight:600 },
+  unlockedBox: { background:'rgba(16,185,129,0.15)', color:'#6EE7B7', border:'1px solid rgba(16,185,129,0.3)', borderRadius:12, padding:'10px 20px', fontSize:14, fontWeight:800, marginBottom:16, fontFamily:'Nunito,sans-serif' },
+  aiBox:       { background:'rgba(99,102,241,0.08)', borderRadius:14, padding:'14px 16px', marginBottom:20, border:'1px solid rgba(99,102,241,0.2)', textAlign:'left', width:'100%' },
+  aiRow:       { display:'flex', alignItems:'center', gap:8, marginBottom:6, fontWeight:600, color:'#94A3B8', fontFamily:'Nunito,sans-serif' },
+  aiText:      { fontSize:13, color:'#94A3B8', lineHeight:1.6, margin:0, fontWeight:600, fontFamily:'Nunito,sans-serif' },
   resultBtns:  { display:'flex', gap:12, justifyContent:'center' },
-  playBtn:     { background:'linear-gradient(135deg,#3B82F6,#8B5CF6)', color:'#fff', border:'none', padding:'14px 24px', borderRadius:16, fontSize:16, fontWeight:800, cursor:'pointer', fontFamily:'Nunito,sans-serif' },
-  homeBtn:     { background:'#F3F4F6', color:'#4B5563', border:'none', padding:'14px 24px', borderRadius:16, fontSize:16, fontWeight:800, cursor:'pointer', fontFamily:'Nunito,sans-serif' },
+  playBtn:     { background:'linear-gradient(135deg,#3B82F6,#8B5CF6)', color:'#fff', border:'none', padding:'14px 24px', borderRadius:16, fontSize:16, fontWeight:800, cursor:'pointer', fontFamily:'Nunito,sans-serif', boxShadow:'0 4px 15px rgba(59,130,246,0.4)' },
+  homeBtn:     { background:'rgba(30,41,59,0.8)', color:'#94A3B8', border:'1px solid #2D3A4F', padding:'14px 24px', borderRadius:16, fontSize:16, fontWeight:800, cursor:'pointer', fontFamily:'Nunito,sans-serif' },
 };

@@ -108,3 +108,5 @@ def create_admin_profile(user):
     }
     db.admin_profiles.insert_one(profile)
     return profile
+
+    

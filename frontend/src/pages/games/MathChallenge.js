@@ -163,7 +163,7 @@ export default function MathChallenge() {
 
   const timePct=(timeLeft/currentStage.timer)*100;
 
-  if (!loaded) return <div style={{ minHeight:'100vh',display:'flex',alignItems:'center',justifyContent:'center',background:'#FEF2F2',fontSize:18 }}>Loading... ✨</div>;
+  if (!loaded) return <div style={{ minHeight:'100vh',display:'flex',alignItems:'center',justifyContent:'center',background:'#0B1120',fontSize:18,color:'#94A3B8',fontFamily:'Nunito,sans-serif' }}>Loading... ✨</div>;
 
   if (!playing) {
     return (
@@ -180,12 +180,12 @@ export default function MathChallenge() {
             {STAGES.map((s,i)=>{
               const unlocked=unlockedStages.includes(i);
               return(
-                <motion.div key={i} style={{...S.stageCard,opacity:unlocked?1:0.5,border:stageIndex===i?'3px solid #EF4444':'3px solid transparent',background:unlocked?'#FEE2E2':'#F3F4F6'}}
-                  whileHover={unlocked?{scale:1.05}:{}} whileTap={unlocked?{scale:0.95}:{}}
+                <motion.div key={i} style={{...S.stageCard,opacity:unlocked?1:0.5,border:stageIndex===i?'2px solid #EF4444':'1px solid #2D3A4F',background:unlocked?'rgba(239,68,68,0.1)':'#1E293B'}}
+                  whileHover={unlocked?{scale:1.05,borderColor:'rgba(239,68,68,0.5)'}:{}} whileTap={unlocked?{scale:0.95}:{}}
                   onClick={()=>{if(unlocked){setStageIndex(i);setStageOver(false);}}}>
                   <div style={{fontSize:28}}>{unlocked?(i<3?'➕':'📖'):'🔒'}</div>
-                  <div style={{fontSize:13,fontWeight:800,color:unlocked?'#991B1B':'#9CA3AF'}}>{s.name}</div>
-                  <div style={{fontSize:11,color:'#EF4444',fontWeight:700}}>⏱️ {s.timer}s</div>
+                  <div style={{fontSize:13,fontWeight:800,color:unlocked?'#EF4444':'#4B5563',fontFamily:'Nunito,sans-serif'}}>{s.name}</div>
+                  <div style={{fontSize:11,color:'#F59E0B',fontWeight:700}}>⏱️ {s.timer}s</div>
                   {unlocked&&<div style={{fontSize:11,color:'#10B981',fontWeight:700,marginTop:4}}>✅ Unlocked</div>}
                 </motion.div>
               );
@@ -240,24 +240,24 @@ export default function MathChallenge() {
       <div style={S.gameArea}>
         <motion.div style={S.questionBox} key={round} initial={{scale:0.9,opacity:0}} animate={{scale:1,opacity:1}}>
           <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:20}}>
-            <div style={{flex:1,height:10,background:'#F3F4F6',borderRadius:10,overflow:'hidden'}}>
+            <div style={{flex:1,height:10,background:'#2D3A4F',borderRadius:10,overflow:'hidden'}}>
               <motion.div style={{height:'100%',borderRadius:10,background:timePct>50?'#10B981':timePct>25?'#F59E0B':'#EF4444'}} animate={{width:`${timePct}%`}} transition={{duration:0.8}}/>
             </div>
-            <span style={{fontSize:16,fontWeight:900,color:timeLeft<=5?'#EF4444':'#374151',minWidth:30}}>{timeLeft}s</span>
+            <span style={{fontSize:16,fontWeight:900,color:timeLeft<=5?'#EF4444':'#94A3B8',minWidth:30,fontFamily:'Nunito,sans-serif'}}>{timeLeft}s</span>
           </div>
           {question.isWord?(
-            <div style={{fontSize:16,fontWeight:700,color:'#1F1F2E',lineHeight:1.7,textAlign:'center'}}>📖 {question.q}</div>
+            <div style={{fontSize:16,fontWeight:700,color:'#F1F5F9',lineHeight:1.7,textAlign:'center',fontFamily:'Nunito,sans-serif'}}>📖 {question.q}</div>
           ):(
             <div style={{display:'flex',alignItems:'center',justifyContent:'center',gap:12,flexWrap:'wrap'}}>
-              <span style={{fontSize:48,fontWeight:900,color:'#1F1F2E'}}>{question.a}</span>
+              <span style={{fontSize:48,fontWeight:900,color:'#F1F5F9',fontFamily:'Nunito,sans-serif'}}>{question.a}</span>
               <span style={{fontSize:40,fontWeight:900,color:'#EF4444'}}>{question.op}</span>
-              <span style={{fontSize:48,fontWeight:900,color:'#1F1F2E'}}>{question.b}</span>
+              <span style={{fontSize:48,fontWeight:900,color:'#F1F5F9',fontFamily:'Nunito,sans-serif'}}>{question.b}</span>
               <span style={{fontSize:40,fontWeight:900,color:'#EF4444'}}>=</span>
-              <span style={{fontSize:48,fontWeight:900,color:'#7C3AED',background:'#EDE9FE',borderRadius:12,padding:'4px 16px'}}>?</span>
+              <span style={{fontSize:48,fontWeight:900,color:'#8B5CF6',background:'rgba(139,92,246,0.15)',borderRadius:12,padding:'4px 16px',border:'1px solid rgba(139,92,246,0.3)'}}>?</span>
             </div>
           )}
           <AnimatePresence>
-            {showHint&&<motion.div style={{background:'#FEF3C7',color:'#92400E',borderRadius:12,padding:'8px 16px',fontSize:14,fontWeight:700,border:'2px solid #FCD34D',marginTop:14}} initial={{opacity:0}} animate={{opacity:1}} exit={{opacity:0}}>🤖 Answer: <strong>{question.answer}</strong></motion.div>}
+            {showHint&&<motion.div style={{background:'rgba(245,158,11,0.1)',color:'#F59E0B',borderRadius:12,padding:'8px 16px',fontSize:14,fontWeight:700,border:'1px solid rgba(245,158,11,0.3)',marginTop:14,fontFamily:'Nunito,sans-serif'}} initial={{opacity:0}} animate={{opacity:1}} exit={{opacity:0}}>🤖 Answer: <strong>{question.answer}</strong></motion.div>}
           </AnimatePresence>
         </motion.div>
         <AnimatePresence>
@@ -280,34 +280,34 @@ export default function MathChallenge() {
 }
 
 const S = {
-  page:        {minHeight:'100vh',background:'#FEF2F2',display:'flex',flexDirection:'column'},
-  header:      {background:'#fff',padding:'14px 24px',display:'flex',alignItems:'center',justifyContent:'space-between',boxShadow:'0 2px 12px rgba(239,68,68,0.08)'},
-  backBtn:     {background:'#FEE2E2',color:'#EF4444',border:'none',padding:'8px 16px',borderRadius:12,fontSize:14,fontWeight:700,cursor:'pointer',fontFamily:'Nunito,sans-serif'},
-  headerTitle: {fontSize:20,fontWeight:900,color:'#1F1F2E'},
-  scoreBadge:  {background:'#FEF3C7',color:'#D97706',padding:'6px 14px',borderRadius:20,fontSize:14,fontWeight:700},
-  progressWrap:{padding:'10px 24px',background:'#fff',borderBottom:'1px solid #F3F4F6',display:'flex',alignItems:'center',gap:10},
-  progressTrack:{flex:1,height:10,background:'#FEE2E2',borderRadius:10,overflow:'hidden'},
+  page:        {minHeight:'100vh',background:'#0B1120',display:'flex',flexDirection:'column'},
+  header:      {background:'#1E293B',padding:'14px 24px',display:'flex',alignItems:'center',justifyContent:'space-between',borderBottom:'1px solid #2D3A4F'},
+  backBtn:     {background:'rgba(239,68,68,0.12)',color:'#EF4444',border:'1px solid rgba(239,68,68,0.3)',padding:'8px 16px',borderRadius:12,fontSize:14,fontWeight:700,cursor:'pointer',fontFamily:'Nunito,sans-serif'},
+  headerTitle: {fontSize:20,fontWeight:900,color:'#F1F5F9',fontFamily:'Nunito,sans-serif'},
+  scoreBadge:  {background:'rgba(245,158,11,0.15)',color:'#F59E0B',padding:'6px 14px',borderRadius:20,fontSize:14,fontWeight:700,border:'1px solid rgba(245,158,11,0.3)'},
+  progressWrap:{padding:'10px 24px',background:'#1E293B',borderBottom:'1px solid #2D3A4F',display:'flex',alignItems:'center',gap:10},
+  progressTrack:{flex:1,height:10,background:'#2D3A4F',borderRadius:10,overflow:'hidden'},
   progressFill:{height:'100%',background:'linear-gradient(90deg,#EF4444,#7C3AED)',borderRadius:10},
-  roundText:   {fontSize:13,fontWeight:700,color:'#EF4444',whiteSpace:'nowrap'},
+  roundText:   {fontSize:13,fontWeight:700,color:'#EF4444',whiteSpace:'nowrap',fontFamily:'Nunito,sans-serif'},
   gameArea:    {flex:1,display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',padding:'20px',gap:20},
-  questionBox: {background:'#fff',borderRadius:28,padding:'24px 28px',textAlign:'center',boxShadow:'0 8px 32px rgba(239,68,68,0.1)',width:'100%',maxWidth:440},
-  feedbackBubble:{padding:'12px 28px',borderRadius:16,fontSize:16,fontWeight:800},
+  questionBox: {background:'#1E293B',border:'1px solid #2D3A4F',borderRadius:28,padding:'24px 28px',textAlign:'center',boxShadow:'0 8px 32px rgba(0,0,0,0.3)',width:'100%',maxWidth:440},
+  feedbackBubble:{padding:'12px 28px',borderRadius:16,fontSize:16,fontWeight:800,fontFamily:'Nunito,sans-serif'},
   stageArea:   {flex:1,display:'flex',flexDirection:'column',alignItems:'center',padding:'32px 20px'},
-  stageTitle:  {fontSize:24,fontWeight:900,color:'#1F1F2E',margin:'0 0 8px'},
-  stageSub:    {fontSize:14,color:'#6B7280',marginBottom:28,textAlign:'center'},
+  stageTitle:  {fontSize:24,fontWeight:900,color:'#F1F5F9',margin:'0 0 8px',fontFamily:'Nunito,sans-serif'},
+  stageSub:    {fontSize:14,color:'#64748B',marginBottom:28,textAlign:'center',fontFamily:'Nunito,sans-serif'},
   stagesGrid:  {display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(140px,1fr))',gap:16,width:'100%',maxWidth:800,marginBottom:28},
-  stageCard:   {borderRadius:20,padding:'20px 16px',textAlign:'center',cursor:'pointer',transition:'all 0.2s',boxShadow:'0 4px 16px rgba(0,0,0,0.06)'},
+  stageCard:   {borderRadius:20,padding:'20px 16px',textAlign:'center',cursor:'pointer',transition:'all 0.2s'},
   startBtn:    {color:'#fff',border:'none',padding:'16px 40px',borderRadius:18,fontSize:18,fontWeight:800,cursor:'pointer',fontFamily:'Nunito,sans-serif'},
-  resultCard:  {background:'#fff',borderRadius:32,padding:'40px 36px',textAlign:'center',maxWidth:460,width:'90%',margin:'6vh auto',boxShadow:'0 20px 60px rgba(239,68,68,0.15)'},
-  resultTitle: {fontSize:32,fontWeight:900,color:'#1F1F2E',margin:'12px 0 8px'},
-  resultScore: {fontSize:18,color:'#6B7280',margin:'0 0 8px'},
-  resultPct:   {fontSize:64,fontWeight:900,color:'#EF4444'},
+  resultCard:  {background:'#1E293B',border:'1px solid #2D3A4F',borderRadius:32,padding:'40px 36px',textAlign:'center',maxWidth:460,width:'90%',margin:'6vh auto',boxShadow:'0 20px 60px rgba(0,0,0,0.5)'},
+  resultTitle: {fontSize:32,fontWeight:900,color:'#F1F5F9',margin:'12px 0 8px',fontFamily:'Nunito,sans-serif'},
+  resultScore: {fontSize:18,color:'#94A3B8',margin:'0 0 8px',fontFamily:'Nunito,sans-serif'},
+  resultPct:   {fontSize:64,fontWeight:900,color:'#EF4444',fontFamily:'Nunito,sans-serif'},
   starsRow:    {display:'flex',justifyContent:'center',gap:8,margin:'12px 0 16px'},
-  unlockedBox: {background:'#D1FAE5',color:'#065F46',borderRadius:12,padding:'10px 20px',fontSize:14,fontWeight:800,marginBottom:16},
-  aiBox:       {background:'#EFF6FF',borderRadius:14,padding:'14px 16px',marginBottom:20,border:'2px solid #BFDBFE',textAlign:'left',width:'100%'},
-  aiRow:       {display:'flex',alignItems:'center',gap:8,marginBottom:6,fontWeight:600},
-  aiText:      {fontSize:13,color:'#1E40AF',lineHeight:1.6,margin:0,fontWeight:600},
+  unlockedBox: {background:'rgba(16,185,129,0.15)',color:'#6EE7B7',border:'1px solid rgba(16,185,129,0.3)',borderRadius:12,padding:'10px 20px',fontSize:14,fontWeight:800,marginBottom:16,fontFamily:'Nunito,sans-serif'},
+  aiBox:       {background:'rgba(99,102,241,0.08)',borderRadius:14,padding:'14px 16px',marginBottom:20,border:'1px solid rgba(99,102,241,0.2)',textAlign:'left',width:'100%'},
+  aiRow:       {display:'flex',alignItems:'center',gap:8,marginBottom:6,fontWeight:600,color:'#94A3B8',fontFamily:'Nunito,sans-serif'},
+  aiText:      {fontSize:13,color:'#94A3B8',lineHeight:1.6,margin:0,fontWeight:600,fontFamily:'Nunito,sans-serif'},
   resultBtns:  {display:'flex',gap:12,justifyContent:'center'},
-  playBtn:     {background:'linear-gradient(135deg,#EF4444,#7C3AED)',color:'#fff',border:'none',padding:'14px 24px',borderRadius:16,fontSize:16,fontWeight:800,cursor:'pointer',fontFamily:'Nunito,sans-serif'},
-  homeBtn:     {background:'#F3F4F6',color:'#4B5563',border:'none',padding:'14px 24px',borderRadius:16,fontSize:16,fontWeight:800,cursor:'pointer',fontFamily:'Nunito,sans-serif'},
+  playBtn:     {background:'linear-gradient(135deg,#EF4444,#7C3AED)',color:'#fff',border:'none',padding:'14px 24px',borderRadius:16,fontSize:16,fontWeight:800,cursor:'pointer',fontFamily:'Nunito,sans-serif',boxShadow:'0 4px 15px rgba(239,68,68,0.4)'},
+  homeBtn:     {background:'rgba(30,41,59,0.8)',color:'#94A3B8',border:'1px solid #2D3A4F',padding:'14px 24px',borderRadius:16,fontSize:16,fontWeight:800,cursor:'pointer',fontFamily:'Nunito,sans-serif'},
 };

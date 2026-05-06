@@ -179,14 +179,14 @@ export default function ColorExplorer() {
           {STAGES.map((s, i) => {
             const unlocked = unlockedStages.includes(i);
             return (
-              <motion.div key={i} style={{ ...S.stageCard, opacity:unlocked?1:0.5, border:stageIndex===i?'3px solid #EC4899':'3px solid transparent', background:unlocked?'#FCE7F3':'#F3F4F6' }}
-                whileHover={unlocked?{scale:1.05}:{}} whileTap={unlocked?{scale:0.95}:{}}
+              <motion.div key={i} style={{ ...S.stageCard, opacity:unlocked?1:0.5, border:stageIndex===i?'2px solid #EC4899':'1px solid #2D3A4F', background:unlocked?'rgba(236,72,153,0.1)':'#1E293B' }}
+                whileHover={unlocked?{scale:1.05,borderColor:'rgba(236,72,153,0.5)'}:{}} whileTap={unlocked?{scale:0.95}:{}}
                 onClick={() => { if (unlocked) { setStageIndex(i); setStageOver(false); } }}>
                 <div style={{ display:'flex', gap:6, justifyContent:'center', marginBottom:8 }}>
-                  {s.colors.slice(0,4).map(c => <div key={c.name} style={{ width:22, height:22, borderRadius:'50%', background:c.hex, border:'2px solid rgba(0,0,0,0.1)' }} />)}
+                  {s.colors.slice(0,4).map(c => <div key={c.name} style={{ width:22, height:22, borderRadius:'50%', background:c.hex, border:'2px solid rgba(255,255,255,0.1)' }} />)}
                 </div>
-                <div style={{ fontSize:15, fontWeight:800, color:unlocked?'#EC4899':'#9CA3AF' }}>{s.name}</div>
-                <div style={{ fontSize:11, color:'#9CA3AF', marginTop:2 }}>{s.colors.map(c=>c.name).join(', ')}</div>
+                <div style={{ fontSize:15, fontWeight:800, color:unlocked?'#EC4899':'#4B5563', fontFamily:'Nunito,sans-serif' }}>{s.name}</div>
+                <div style={{ fontSize:11, color:'#64748B', marginTop:2, fontFamily:'Nunito,sans-serif' }}>{s.colors.map(c=>c.name).join(', ')}</div>
                 {unlocked && <div style={{ fontSize:11, color:'#10B981', fontWeight:700, marginTop:4 }}>✅ Unlocked</div>}
               </motion.div>
             );
@@ -308,35 +308,35 @@ export default function ColorExplorer() {
 }
 
 const S = {
-  loadScreen:  { minHeight:'100vh', display:'flex', alignItems:'center', justifyContent:'center', background:'#FDF2F8', fontSize:18 },
-  page:        { minHeight:'100vh', background:'#FDF2F8', display:'flex', flexDirection:'column' },
-  header:      { background:'#fff', padding:'14px 24px', display:'flex', alignItems:'center', justifyContent:'space-between', boxShadow:'0 2px 12px rgba(236,72,153,0.08)' },
-  backBtn:     { background:'#FCE7F3', color:'#EC4899', border:'none', padding:'8px 16px', borderRadius:12, fontSize:14, fontWeight:700, cursor:'pointer', fontFamily:'Nunito,sans-serif' },
-  headerTitle: { fontSize:20, fontWeight:900, color:'#1F1F2E' },
-  scoreBadge:  { background:'#FEF3C7', color:'#D97706', padding:'6px 14px', borderRadius:20, fontSize:14, fontWeight:700 },
-  progressWrap:{ padding:'12px 24px', background:'#fff', borderBottom:'1px solid #F3F4F6', display:'flex', alignItems:'center', gap:12 },
-  progressTrack:{ flex:1, height:10, background:'#FCE7F3', borderRadius:10, overflow:'hidden' },
+  loadScreen:  { minHeight:'100vh', display:'flex', alignItems:'center', justifyContent:'center', background:'#0B1120', fontSize:18, color:'#94A3B8', fontFamily:'Nunito,sans-serif' },
+  page:        { minHeight:'100vh', background:'#0B1120', display:'flex', flexDirection:'column' },
+  header:      { background:'#1E293B', padding:'14px 24px', display:'flex', alignItems:'center', justifyContent:'space-between', borderBottom:'1px solid #2D3A4F' },
+  backBtn:     { background:'rgba(236,72,153,0.12)', color:'#EC4899', border:'1px solid rgba(236,72,153,0.3)', padding:'8px 16px', borderRadius:12, fontSize:14, fontWeight:700, cursor:'pointer', fontFamily:'Nunito,sans-serif' },
+  headerTitle: { fontSize:20, fontWeight:900, color:'#F1F5F9', fontFamily:'Nunito,sans-serif' },
+  scoreBadge:  { background:'rgba(245,158,11,0.15)', color:'#F59E0B', padding:'6px 14px', borderRadius:20, fontSize:14, fontWeight:700, border:'1px solid rgba(245,158,11,0.3)' },
+  progressWrap:{ padding:'12px 24px', background:'#1E293B', borderBottom:'1px solid #2D3A4F', display:'flex', alignItems:'center', gap:12 },
+  progressTrack:{ flex:1, height:8, background:'#2D3A4F', borderRadius:10, overflow:'hidden' },
   progressFill:{ height:'100%', background:'linear-gradient(90deg,#EC4899,#F97316)', borderRadius:10 },
-  roundText:   { fontSize:13, fontWeight:700, color:'#EC4899', whiteSpace:'nowrap' },
+  roundText:   { fontSize:13, fontWeight:700, color:'#EC4899', whiteSpace:'nowrap', fontFamily:'Nunito,sans-serif' },
   gameArea:    { flex:1, display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', padding:'24px 20px', gap:20 },
-  questionBox: { background:'#fff', borderRadius:28, padding:'24px 32px', textAlign:'center', boxShadow:'0 8px 32px rgba(236,72,153,0.12)' },
-  questionLabel:{ fontSize:16, color:'#6B7280', fontWeight:700, margin:'0 0 8px' },
+  questionBox: { background:'#1E293B', border:'1px solid #2D3A4F', borderRadius:28, padding:'24px 32px', textAlign:'center', boxShadow:'0 8px 32px rgba(0,0,0,0.3)' },
+  questionLabel:{ fontSize:16, color:'#94A3B8', fontWeight:700, margin:'0 0 8px', fontFamily:'Nunito,sans-serif' },
   stageArea:   { flex:1, display:'flex', flexDirection:'column', alignItems:'center', padding:'32px 20px' },
-  stageTitle:  { fontSize:24, fontWeight:900, color:'#1F1F2E', margin:'0 0 8px' },
-  stageSub:    { fontSize:14, color:'#6B7280', marginBottom:28, textAlign:'center', maxWidth:460 },
+  stageTitle:  { fontSize:24, fontWeight:900, color:'#F1F5F9', margin:'0 0 8px', fontFamily:'Nunito,sans-serif' },
+  stageSub:    { fontSize:14, color:'#64748B', marginBottom:28, textAlign:'center', maxWidth:460, fontFamily:'Nunito,sans-serif' },
   stagesGrid:  { display:'grid', gridTemplateColumns:'repeat(auto-fit,minmax(140px,1fr))', gap:16, width:'100%', maxWidth:700, marginBottom:28 },
-  stageCard:   { borderRadius:20, padding:'20px 16px', textAlign:'center', cursor:'pointer', transition:'all 0.2s', boxShadow:'0 4px 16px rgba(0,0,0,0.06)' },
+  stageCard:   { borderRadius:20, padding:'20px 16px', textAlign:'center', cursor:'pointer', transition:'all 0.2s' },
   startBtn:    { color:'#fff', border:'none', padding:'16px 40px', borderRadius:18, fontSize:18, fontWeight:800, cursor:'pointer', fontFamily:'Nunito,sans-serif' },
-  resultCard:  { background:'#fff', borderRadius:32, padding:'40px 36px', textAlign:'center', maxWidth:460, width:'90%', margin:'6vh auto', boxShadow:'0 20px 60px rgba(236,72,153,0.15)' },
-  resultTitle: { fontSize:32, fontWeight:900, color:'#1F1F2E', margin:'12px 0 8px' },
-  resultScore: { fontSize:18, color:'#6B7280', margin:'0 0 8px' },
-  resultPct:   { fontSize:64, fontWeight:900, color:'#EC4899' },
+  resultCard:  { background:'#1E293B', border:'1px solid #2D3A4F', borderRadius:32, padding:'40px 36px', textAlign:'center', maxWidth:460, width:'90%', margin:'6vh auto', boxShadow:'0 20px 60px rgba(0,0,0,0.5)' },
+  resultTitle: { fontSize:32, fontWeight:900, color:'#F1F5F9', margin:'12px 0 8px', fontFamily:'Nunito,sans-serif' },
+  resultScore: { fontSize:18, color:'#94A3B8', margin:'0 0 8px', fontFamily:'Nunito,sans-serif' },
+  resultPct:   { fontSize:64, fontWeight:900, color:'#EC4899', fontFamily:'Nunito,sans-serif' },
   starsRow:    { display:'flex', justifyContent:'center', gap:8, margin:'12px 0 12px' },
-  unlockedBox: { background:'#D1FAE5', color:'#065F46', borderRadius:12, padding:'10px 20px', fontSize:14, fontWeight:800, marginBottom:16 },
-  aiBox:       { background:'#EFF6FF', borderRadius:14, padding:'14px 16px', marginBottom:20, border:'2px solid #BFDBFE', textAlign:'left', width:'100%' },
-  aiRow:       { display:'flex', alignItems:'center', gap:8, marginBottom:6, fontWeight:600 },
-  aiText:      { fontSize:13, color:'#1E40AF', lineHeight:1.6, margin:0, fontWeight:600 },
+  unlockedBox: { background:'rgba(16,185,129,0.15)', color:'#6EE7B7', border:'1px solid rgba(16,185,129,0.3)', borderRadius:12, padding:'10px 20px', fontSize:14, fontWeight:800, marginBottom:16, fontFamily:'Nunito,sans-serif' },
+  aiBox:       { background:'rgba(99,102,241,0.08)', borderRadius:14, padding:'14px 16px', marginBottom:20, border:'1px solid rgba(99,102,241,0.2)', textAlign:'left', width:'100%' },
+  aiRow:       { display:'flex', alignItems:'center', gap:8, marginBottom:6, fontWeight:600, color:'#94A3B8', fontFamily:'Nunito,sans-serif' },
+  aiText:      { fontSize:13, color:'#94A3B8', lineHeight:1.6, margin:0, fontWeight:600, fontFamily:'Nunito,sans-serif' },
   resultBtns:  { display:'flex', gap:12, justifyContent:'center' },
-  playBtn:     { background:'linear-gradient(135deg,#EC4899,#F97316)', color:'#fff', border:'none', padding:'14px 24px', borderRadius:16, fontSize:16, fontWeight:800, cursor:'pointer', fontFamily:'Nunito,sans-serif' },
-  homeBtn:     { background:'#F3F4F6', color:'#4B5563', border:'none', padding:'14px 24px', borderRadius:16, fontSize:16, fontWeight:800, cursor:'pointer', fontFamily:'Nunito,sans-serif' },
+  playBtn:     { background:'linear-gradient(135deg,#EC4899,#F97316)', color:'#fff', border:'none', padding:'14px 24px', borderRadius:16, fontSize:16, fontWeight:800, cursor:'pointer', fontFamily:'Nunito,sans-serif', boxShadow:'0 4px 15px rgba(236,72,153,0.35)' },
+  homeBtn:     { background:'rgba(30,41,59,0.8)', color:'#94A3B8', border:'1px solid #2D3A4F', padding:'14px 24px', borderRadius:16, fontSize:16, fontWeight:800, cursor:'pointer', fontFamily:'Nunito,sans-serif' },
 };

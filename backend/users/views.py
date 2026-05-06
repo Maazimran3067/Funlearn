@@ -21,6 +21,10 @@ from .serializers import (
 from datetime import datetime
 import random
 import string
+import traceback
+import logging
+
+logger = logging.getLogger(__name__)
 
 User = get_user_model()
 
@@ -86,6 +90,9 @@ def send_otp_view(request):
         )
         return Response({'message': f'Verification code sent to {email}. Check your inbox and spam folder.'})
     except Exception as e:
+        tb = traceback.format_exc()
+        logger.error(f'OTP email failed for {email}: {str(e)}\n{tb}')
+        logger.error(f'EMAIL_HOST_USER configured: {bool(settings.EMAIL_HOST_USER)}, EMAIL_HOST_PASSWORD configured: {bool(settings.EMAIL_HOST_PASSWORD)}')
         return Response({'error': f'Could not send email: {str(e)}'}, status=500)
 
 
@@ -491,5 +498,9 @@ def platform_stats_view(request):
         'total_badges': total_badges,     'total_classes': total_classes,
         'today_scores': today_scores,
     })
+
+
+@api_view(['GET'])
+@permission_classes([AllowAny])
 def health_check(request):
     return JsonResponse({"status": "ok", "message": "FunLearn AI backend is running"})

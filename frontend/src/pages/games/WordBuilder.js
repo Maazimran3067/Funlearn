@@ -181,13 +181,13 @@ export default function WordBuilder() {
             {STAGES.map((s, i) => {
               const unlocked = unlockedStages.includes(i);
               return (
-                <motion.div key={i} style={{ ...S.stageCard, opacity:unlocked?1:0.5, border:stageIndex===i?'3px solid #F97316':'3px solid transparent', background:unlocked?'#FFEDD5':'#F3F4F6' }}
+                <motion.div key={i} style={{ ...S.stageCard, opacity:unlocked?1:0.5, border:stageIndex===i?'2px solid #F97316':'1px solid #2D3A4F', background:unlocked?'rgba(249,115,22,0.1)':'#1E293B' }}
                   whileHover={unlocked?{scale:1.05}:{}} whileTap={unlocked?{scale:0.95}:{}}
                   onClick={() => { if (unlocked) { setStageIndex(i); setStageOver(false); } }}>
                   <div style={{ fontSize:32 }}>{unlocked?'📝':'🔒'}</div>
-                  <div style={{ fontSize:15, fontWeight:800, color:unlocked?'#9A3412':'#9CA3AF' }}>{s.name}</div>
+                  <div style={{ fontSize:15, fontWeight:800, color:unlocked?'#F97316':'#4B5563', fontFamily:'Nunito,sans-serif' }}>{s.name}</div>
                   <div style={{ fontSize:11, color:'#EF4444', fontWeight:700 }}>⏱️ {s.answerTimer}s to answer</div>
-                  <div style={{ fontSize:11, color:'#9CA3AF' }}>e.g. {s.words.slice(0,3).join(', ')}</div>
+                  <div style={{ fontSize:11, color:'#64748B', fontFamily:'Nunito,sans-serif' }}>e.g. {s.words.slice(0,3).join(', ')}</div>
                   {unlocked&&<div style={{ fontSize:11, color:'#10B981', fontWeight:700, marginTop:4 }}>✅ Unlocked</div>}
                 </motion.div>
               );
@@ -243,8 +243,8 @@ export default function WordBuilder() {
         <AnimatePresence>
           {phase === 'preview' && (
             <motion.div style={S.wordFlash} initial={{ scale:0.8,opacity:0 }} animate={{ scale:1,opacity:1 }} exit={{ scale:0.8,opacity:0 }}>
-              <div style={{ fontSize:13, color:'#6B7280', fontWeight:700, marginBottom:12 }}>Memorise this word!</div>
-              <div style={{ fontSize:56, fontWeight:900, color:'#F97316', letterSpacing:8 }}>{word}</div>
+              <div style={{ fontSize:13, color:'#64748B', fontWeight:700, marginBottom:12, fontFamily:'Nunito,sans-serif' }}>Memorise this word!</div>
+              <div style={{ fontSize:56, fontWeight:900, color:'#F97316', letterSpacing:8, fontFamily:'Nunito,sans-serif' }}>{word}</div>
               <div style={{ marginTop:14 }}>
                 <div style={{ width:52, height:52, borderRadius:'50%', background:'#F97316', color:'#fff', fontSize:24, fontWeight:900, display:'flex', alignItems:'center', justifyContent:'center', margin:'0 auto' }}>{countdown}</div>
                 <div style={{ fontSize:12, color:'#9CA3AF', marginTop:6 }}>seconds remaining</div>
@@ -259,16 +259,16 @@ export default function WordBuilder() {
             {!feedback && (
               <div style={{ width:'100%', maxWidth:440 }}>
                 <div style={{ display:'flex', alignItems:'center', gap:10, marginBottom:4 }}>
-                  <div style={{ flex:1, height:10, background:'#F3F4F6', borderRadius:10, overflow:'hidden' }}>
+                  <div style={{ flex:1, height:10, background:'#2D3A4F', borderRadius:10, overflow:'hidden' }}>
                     <motion.div style={{ height:'100%', borderRadius:10, background:timerPct>50?'#10B981':timerPct>25?'#F59E0B':'#EF4444' }}
                       animate={{ width:`${timerPct}%` }} transition={{ duration:0.8 }} />
                   </div>
-                  <span style={{ fontSize:14, fontWeight:900, color:answerTime<=5?'#EF4444':'#374151', minWidth:30 }}>{answerTime}s</span>
+                  <span style={{ fontSize:14, fontWeight:900, color:answerTime<=5?'#EF4444':'#94A3B8', minWidth:30, fontFamily:'Nunito,sans-serif' }}>{answerTime}s</span>
                 </div>
               </div>
             )}
 
-            <div style={{ fontSize:14, color:'#6B7280', fontWeight:600 }}>Build the word using the letter tiles!</div>
+            <div style={{ fontSize:14, color:'#64748B', fontWeight:600, fontFamily:'Nunito,sans-serif' }}>Build the word using the letter tiles!</div>
 
             {showHint && (
               <motion.div style={S.hintBox} initial={{ opacity:0 }} animate={{ opacity:1 }}>
@@ -280,7 +280,7 @@ export default function WordBuilder() {
             <div style={{ display:'flex', gap:8, flexWrap:'wrap', justifyContent:'center' }}>
               {Array.from({ length:word.length }).map((_, i) => (
                 <motion.div key={i}
-                  style={{ width:52, height:60, borderRadius:12, border:'2.5px dashed', borderColor:placed[i]?'#F97316':'#E5E7EB', background:placed[i]?'#FFEDD5':'#F9FAFB', display:'flex', alignItems:'center', justifyContent:'center', cursor:placed[i]?'pointer':'default' }}
+                  style={{ width:52, height:60, borderRadius:12, border:'2.5px dashed', borderColor:placed[i]?'#F97316':'#2D3A4F', background:placed[i]?'rgba(249,115,22,0.12)':'#1E293B', display:'flex', alignItems:'center', justifyContent:'center', cursor:placed[i]?'pointer':'default' }}
                   whileHover={placed[i]?{scale:1.05}:{}} onClick={() => placed[i]&&handleRemovePlaced(placed[i])}>
                   {placed[i]&&<motion.span initial={{ scale:0 }} animate={{ scale:1 }} style={{ fontSize:24, fontWeight:900, color:'#F97316' }}>{placed[i].letter}</motion.span>}
                 </motion.div>
@@ -323,38 +323,38 @@ export default function WordBuilder() {
 }
 
 const S = {
-  loadScreen:  { minHeight:'100vh', display:'flex', alignItems:'center', justifyContent:'center', background:'#FFF7ED', fontSize:18 },
-  page:        { minHeight:'100vh', background:'#FFF7ED', display:'flex', flexDirection:'column' },
-  header:      { background:'#fff', padding:'14px 24px', display:'flex', alignItems:'center', justifyContent:'space-between', boxShadow:'0 2px 12px rgba(249,115,22,0.08)' },
-  backBtn:     { background:'#FFEDD5', color:'#F97316', border:'none', padding:'8px 16px', borderRadius:12, fontSize:14, fontWeight:700, cursor:'pointer', fontFamily:'Nunito,sans-serif' },
-  headerTitle: { fontSize:20, fontWeight:900, color:'#1F1F2E' },
-  scoreBadge:  { background:'#FEF3C7', color:'#D97706', padding:'6px 14px', borderRadius:20, fontSize:14, fontWeight:700 },
-  progressWrap:{ padding:'10px 24px', background:'#fff', borderBottom:'1px solid #F3F4F6', display:'flex', alignItems:'center', gap:10 },
-  progressTrack:{ flex:1, height:10, background:'#FFEDD5', borderRadius:10, overflow:'hidden' },
+  loadScreen:  { minHeight:'100vh', display:'flex', alignItems:'center', justifyContent:'center', background:'#0B1120', fontSize:18, color:'#94A3B8', fontFamily:'Nunito,sans-serif' },
+  page:        { minHeight:'100vh', background:'#0B1120', display:'flex', flexDirection:'column' },
+  header:      { background:'#1E293B', padding:'14px 24px', display:'flex', alignItems:'center', justifyContent:'space-between', borderBottom:'1px solid #2D3A4F' },
+  backBtn:     { background:'rgba(249,115,22,0.12)', color:'#F97316', border:'1px solid rgba(249,115,22,0.3)', padding:'8px 16px', borderRadius:12, fontSize:14, fontWeight:700, cursor:'pointer', fontFamily:'Nunito,sans-serif' },
+  headerTitle: { fontSize:20, fontWeight:900, color:'#F1F5F9', fontFamily:'Nunito,sans-serif' },
+  scoreBadge:  { background:'rgba(245,158,11,0.15)', color:'#F59E0B', padding:'6px 14px', borderRadius:20, fontSize:14, fontWeight:700, border:'1px solid rgba(245,158,11,0.3)' },
+  progressWrap:{ padding:'10px 24px', background:'#1E293B', borderBottom:'1px solid #2D3A4F', display:'flex', alignItems:'center', gap:10 },
+  progressTrack:{ flex:1, height:10, background:'#2D3A4F', borderRadius:10, overflow:'hidden' },
   progressFill:{ height:'100%', background:'linear-gradient(90deg,#F97316,#EC4899)', borderRadius:10 },
-  roundText:   { fontSize:13, fontWeight:700, color:'#F97316', whiteSpace:'nowrap' },
+  roundText:   { fontSize:13, fontWeight:700, color:'#F97316', whiteSpace:'nowrap', fontFamily:'Nunito,sans-serif' },
   gameArea:    { flex:1, display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', padding:'20px', gap:14 },
-  wordFlash:   { background:'#fff', borderRadius:24, padding:'32px 48px', textAlign:'center', boxShadow:'0 8px 32px rgba(249,115,22,0.15)' },
-  hintBox:     { background:'#FFEDD5', color:'#9A3412', borderRadius:14, padding:'10px 20px', fontSize:14, fontWeight:700, border:'2px solid #FED7AA' },
-  feedbackBubble:{ padding:'12px 24px', borderRadius:16, fontSize:15, fontWeight:800 },
+  wordFlash:   { background:'#1E293B', border:'1px solid #2D3A4F', borderRadius:24, padding:'32px 48px', textAlign:'center', boxShadow:'0 8px 32px rgba(0,0,0,0.3)' },
+  hintBox:     { background:'rgba(249,115,22,0.1)', color:'#F97316', borderRadius:14, padding:'10px 20px', fontSize:14, fontWeight:700, border:'1px solid rgba(249,115,22,0.3)', fontFamily:'Nunito,sans-serif' },
+  feedbackBubble:{ padding:'12px 24px', borderRadius:16, fontSize:15, fontWeight:800, fontFamily:'Nunito,sans-serif' },
   checkBtn:    { background:'#7C3AED', color:'#fff', border:'none', padding:'13px 24px', borderRadius:14, fontSize:15, fontWeight:800, cursor:'pointer', fontFamily:'Nunito,sans-serif' },
-  clearBtn:    { background:'#F3F4F6', color:'#4B5563', border:'none', padding:'13px 20px', borderRadius:14, fontSize:15, fontWeight:700, cursor:'pointer', fontFamily:'Nunito,sans-serif' },
+  clearBtn:    { background:'rgba(30,41,59,0.8)', color:'#94A3B8', border:'1px solid #2D3A4F', padding:'13px 20px', borderRadius:14, fontSize:15, fontWeight:700, cursor:'pointer', fontFamily:'Nunito,sans-serif' },
   stageArea:   { flex:1, display:'flex', flexDirection:'column', alignItems:'center', padding:'32px 20px' },
-  stageTitle:  { fontSize:24, fontWeight:900, color:'#1F1F2E', margin:'0 0 8px' },
-  stageSub:    { fontSize:14, color:'#6B7280', marginBottom:28, textAlign:'center', maxWidth:460 },
+  stageTitle:  { fontSize:24, fontWeight:900, color:'#F1F5F9', margin:'0 0 8px', fontFamily:'Nunito,sans-serif' },
+  stageSub:    { fontSize:14, color:'#64748B', marginBottom:28, textAlign:'center', maxWidth:460, fontFamily:'Nunito,sans-serif' },
   stagesGrid:  { display:'grid', gridTemplateColumns:'repeat(auto-fit,minmax(140px,1fr))', gap:16, width:'100%', maxWidth:700, marginBottom:28 },
-  stageCard:   { borderRadius:20, padding:'20px 16px', textAlign:'center', cursor:'pointer', transition:'all 0.2s', boxShadow:'0 4px 16px rgba(0,0,0,0.06)' },
+  stageCard:   { borderRadius:20, padding:'20px 16px', textAlign:'center', cursor:'pointer', transition:'all 0.2s' },
   startBtn:    { color:'#fff', border:'none', padding:'16px 40px', borderRadius:18, fontSize:18, fontWeight:800, cursor:'pointer', fontFamily:'Nunito,sans-serif' },
-  resultCard:  { background:'#fff', borderRadius:32, padding:'40px 36px', textAlign:'center', maxWidth:460, width:'90%', margin:'6vh auto', boxShadow:'0 20px 60px rgba(249,115,22,0.15)' },
-  resultTitle: { fontSize:32, fontWeight:900, color:'#1F1F2E', margin:'12px 0 8px' },
-  resultScore: { fontSize:18, color:'#6B7280', margin:'0 0 8px' },
-  resultPct:   { fontSize:64, fontWeight:900, color:'#F97316' },
+  resultCard:  { background:'#1E293B', border:'1px solid #2D3A4F', borderRadius:32, padding:'40px 36px', textAlign:'center', maxWidth:460, width:'90%', margin:'6vh auto', boxShadow:'0 20px 60px rgba(0,0,0,0.5)' },
+  resultTitle: { fontSize:32, fontWeight:900, color:'#F1F5F9', margin:'12px 0 8px', fontFamily:'Nunito,sans-serif' },
+  resultScore: { fontSize:18, color:'#94A3B8', margin:'0 0 8px', fontFamily:'Nunito,sans-serif' },
+  resultPct:   { fontSize:64, fontWeight:900, color:'#F97316', fontFamily:'Nunito,sans-serif' },
   starsRow:    { display:'flex', justifyContent:'center', gap:8, margin:'12px 0 16px' },
-  unlockedBox: { background:'#D1FAE5', color:'#065F46', borderRadius:12, padding:'10px 20px', fontSize:14, fontWeight:800, marginBottom:16 },
-  aiBox:       { background:'#EFF6FF', borderRadius:14, padding:'14px 16px', marginBottom:20, border:'2px solid #BFDBFE', textAlign:'left', width:'100%' },
-  aiRow:       { display:'flex', alignItems:'center', gap:8, marginBottom:6, fontWeight:600 },
-  aiText:      { fontSize:13, color:'#1E40AF', lineHeight:1.6, margin:0, fontWeight:600 },
+  unlockedBox: { background:'rgba(16,185,129,0.15)', color:'#6EE7B7', border:'1px solid rgba(16,185,129,0.3)', borderRadius:12, padding:'10px 20px', fontSize:14, fontWeight:800, marginBottom:16, fontFamily:'Nunito,sans-serif' },
+  aiBox:       { background:'rgba(99,102,241,0.08)', borderRadius:14, padding:'14px 16px', marginBottom:20, border:'1px solid rgba(99,102,241,0.2)', textAlign:'left', width:'100%' },
+  aiRow:       { display:'flex', alignItems:'center', gap:8, marginBottom:6, fontWeight:600, color:'#94A3B8', fontFamily:'Nunito,sans-serif' },
+  aiText:      { fontSize:13, color:'#94A3B8', lineHeight:1.6, margin:0, fontWeight:600, fontFamily:'Nunito,sans-serif' },
   resultBtns:  { display:'flex', gap:12, justifyContent:'center' },
-  playBtn:     { background:'linear-gradient(135deg,#F97316,#7C3AED)', color:'#fff', border:'none', padding:'14px 24px', borderRadius:16, fontSize:16, fontWeight:800, cursor:'pointer', fontFamily:'Nunito,sans-serif' },
-  homeBtn:     { background:'#F3F4F6', color:'#4B5563', border:'none', padding:'14px 24px', borderRadius:16, fontSize:16, fontWeight:800, cursor:'pointer', fontFamily:'Nunito,sans-serif' },
+  playBtn:     { background:'linear-gradient(135deg,#F97316,#7C3AED)', color:'#fff', border:'none', padding:'14px 24px', borderRadius:16, fontSize:16, fontWeight:800, cursor:'pointer', fontFamily:'Nunito,sans-serif', boxShadow:'0 4px 15px rgba(249,115,22,0.4)' },
+  homeBtn:     { background:'rgba(30,41,59,0.8)', color:'#94A3B8', border:'1px solid #2D3A4F', padding:'14px 24px', borderRadius:16, fontSize:16, fontWeight:800, cursor:'pointer', fontFamily:'Nunito,sans-serif' },
 };

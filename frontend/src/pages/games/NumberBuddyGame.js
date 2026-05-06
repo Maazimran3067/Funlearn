@@ -115,17 +115,29 @@ export default function NumberBuddyGame() {
       alignItems:'center', justifyContent:'center' }}>
       <motion.div initial={{ scale:0.8, opacity:0 }} animate={{ scale:1, opacity:1 }}
         style={{ background:'#1E293B', border:'1px solid #2D3A4F', borderRadius:24,
-          padding:'40px 36px', textAlign:'center', maxWidth:380, width:'100%' }}>
-        <div style={{ fontSize:52, marginBottom:12 }}>{pct >= 70 ? '🎉' : '💪'}</div>
+          padding:'40px 36px', textAlign:'center', maxWidth:400, width:'100%',
+          boxShadow:'0 20px 60px rgba(0,0,0,0.5)' }}>
+        <div style={{ fontSize:52, marginBottom:12 }}>{pct >= 70 ? '🏆' : '💪'}</div>
         <div style={{ fontSize:22, fontWeight:900, color:'#F1F5F9',
           fontFamily:'Nunito,sans-serif', marginBottom:6 }}>
-          {pct >= 70 ? 'Great job!' : 'Keep trying!'}
+          {pct >= 70 ? 'Stage Passed! 🎉' : 'Keep Trying!'}
         </div>
         <div style={{ fontSize:36, fontWeight:900, color:'#F97316',
           fontFamily:'Nunito,sans-serif', margin:'12px 0' }}>{pct}%</div>
-        <div style={{ fontSize:14, color:'#94A3B8', fontFamily:'Nunito,sans-serif', marginBottom:20 }}>
+        <div style={{ fontSize:14, color:'#94A3B8', fontFamily:'Nunito,sans-serif', marginBottom:12 }}>
           {score} / {TOTAL} correct
         </div>
+        <div style={{ display:'flex', justifyContent:'center', gap:8, marginBottom:16 }}>
+          {[1,2,3].map(n => <span key={n} style={{ fontSize:32, opacity: pct>=n*30?1:0.25 }}>⭐</span>)}
+        </div>
+        {pct >= 70 && stageIdx + 1 < STAGES.length && (
+          <div style={{ background:'rgba(16,185,129,0.15)', color:'#6EE7B7',
+            border:'1px solid rgba(16,185,129,0.3)', borderRadius:12,
+            padding:'10px 20px', fontSize:14, fontWeight:800, marginBottom:16,
+            fontFamily:'Nunito,sans-serif' }}>
+            🎉 {STAGES[stageIdx + 1].label} Unlocked!
+          </div>
+        )}
         <div style={{ display:'flex', gap:10, justifyContent:'center' }}>
           <motion.button whileHover={{ scale:1.04 }} whileTap={{ scale:0.96 }}
             onClick={() => startStage(stageIdx)}
@@ -187,7 +199,7 @@ export default function NumberBuddyGame() {
         <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:10 }}>
           {question?.options.map((opt, i) => (
             <motion.button key={i}
-              style={{ padding:'18px', borderRadius:14, border:'1px solid #2D3A4F', fontSize:28,
+              style={{ padding:'18px', borderRadius:14, fontSize:28,
                 fontWeight:900, cursor:'pointer', fontFamily:'Nunito,sans-serif',
                 background: feedback === 'correct' && opt === question.count ? 'rgba(16,185,129,0.2)'
                   : feedback === 'wrong' && opt === question.count ? 'rgba(16,185,129,0.2)'

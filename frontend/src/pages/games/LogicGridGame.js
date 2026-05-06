@@ -220,88 +220,47 @@ export default function LogicGridGame() {
 
   if (screen === 'result')
     return (
-      <div
-        style={{
-          minHeight: '100vh',
-          background: '#0B1120',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-        }}
-      >
-        <motion.div
-          initial={{ scale: 0.85, opacity: 0 }}
-          animate={{ scale: 1, opacity: 1 }}
-          style={{
-            background: '#1E293B',
-            border: '1px solid #2D3A4F',
-            borderRadius: 24,
-            padding: '40px',
-            textAlign: 'center',
-            maxWidth: 380,
-          }}
-        >
-          <div style={{ fontSize: 52, marginBottom: 12 }}>
-            {pct >= 70 ? '🎉' : '💪'}
+      <div style={{ minHeight: '100vh', background: '#0B1120', display: 'flex',
+        alignItems: 'center', justifyContent: 'center' }}>
+        <motion.div initial={{ scale: 0.85, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}
+          style={{ background: '#1E293B', border: '1px solid #2D3A4F', borderRadius: 24,
+            padding: '40px', textAlign: 'center', maxWidth: 400, width: '100%',
+            boxShadow: '0 20px 60px rgba(0,0,0,0.5)' }}>
+          <div style={{ fontSize: 64, marginBottom: 8 }}>{pct >= 70 ? '🏆' : '💪'}</div>
+          <div style={{ fontSize: 22, fontWeight: 900, color: '#F1F5F9',
+            fontFamily: 'Nunito,sans-serif', marginBottom: 6 }}>
+            {pct >= 70 ? 'Logic Master! 🎉' : 'Keep Thinking!'}
           </div>
-          <div
-            style={{
-              fontSize: 22,
-              fontWeight: 900,
-              color: '#F1F5F9',
-              fontFamily: 'Nunito,sans-serif',
-            }}
-          >
-            {pct >= 70 ? 'Logic Master!' : 'Keep Thinking!'}
+          <div style={{ fontSize: 48, fontWeight: 900, color: '#6366F1',
+            fontFamily: 'Nunito,sans-serif', margin: '8px 0' }}>{pct}%</div>
+          <div style={{ fontSize: 14, color: '#94A3B8', fontFamily: 'Nunito,sans-serif', marginBottom: 12 }}>
+            {score} / {TOTAL} correct
           </div>
-          <div
-            style={{
-              fontSize: 40,
-              fontWeight: 900,
-              color: '#6366F1',
-              fontFamily: 'Nunito,sans-serif',
-              margin: '12px 0',
-            }}
-          >
-            {pct}%
+          <div style={{ display: 'flex', justifyContent: 'center', gap: 8, marginBottom: 16 }}>
+            {[1, 2, 3].map(n => <span key={n} style={{ fontSize: 32, opacity: pct >= n * 30 ? 1 : 0.25 }}>⭐</span>)}
           </div>
-          <div
-            style={{ display: 'flex', gap: 10, justifyContent: 'center', marginTop: 20 }}
-          >
-            <motion.button
-              whileHover={{ scale: 1.04 }}
-              whileTap={{ scale: 0.96 }}
+          {pct >= 70 && stageIdx + 1 < STAGES.length && (
+            <div style={{ background: 'rgba(16,185,129,0.15)', color: '#6EE7B7',
+              border: '1px solid rgba(16,185,129,0.3)', borderRadius: 12,
+              padding: '10px 20px', fontSize: 14, fontWeight: 800, marginBottom: 16,
+              fontFamily: 'Nunito,sans-serif' }}>
+              🎉 {STAGES[stageIdx + 1].label} Unlocked!
+            </div>
+          )}
+          <div style={{ display: 'flex', gap: 10, justifyContent: 'center', marginTop: 8 }}>
+            <motion.button whileHover={{ scale: 1.04 }} whileTap={{ scale: 0.96 }}
               onClick={() => startStage(stageIdx)}
-              style={{
-                padding: '10px 22px',
-                borderRadius: 12,
-                border: 'none',
-                background: 'linear-gradient(135deg,#6366F1,#8B5CF6)',
-                color: '#fff',
-                fontSize: 14,
-                fontWeight: 800,
-                cursor: 'pointer',
-                fontFamily: 'Nunito,sans-serif',
-              }}
-            >
+              style={{ padding: '10px 22px', borderRadius: 12, border: 'none',
+                background: 'linear-gradient(135deg,#6366F1,#8B5CF6)', color: '#fff',
+                fontSize: 14, fontWeight: 800, cursor: 'pointer', fontFamily: 'Nunito,sans-serif',
+                boxShadow: '0 4px 15px rgba(99,102,241,0.35)' }}>
               Retry
             </motion.button>
-            <motion.button
-              whileHover={{ scale: 1.04 }}
-              whileTap={{ scale: 0.96 }}
+            <motion.button whileHover={{ scale: 1.04 }} whileTap={{ scale: 0.96 }}
               onClick={() => setScreen('stages')}
-              style={{
-                padding: '10px 22px',
-                borderRadius: 12,
-                border: '1px solid #2D3A4F',
-                background: 'transparent',
-                color: '#94A3B8',
-                fontSize: 14,
-                fontWeight: 700,
-                cursor: 'pointer',
-                fontFamily: 'Nunito,sans-serif',
-              }}
-            >
+              style={{ padding: '10px 22px', borderRadius: 12, border: '1px solid #2D3A4F',
+                background: 'transparent', color: '#94A3B8', fontSize: 14,
+                fontWeight: 700, cursor: 'pointer', fontFamily: 'Nunito,sans-serif' }}>
               Stages
             </motion.button>
           </div>
