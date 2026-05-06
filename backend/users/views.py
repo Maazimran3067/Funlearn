@@ -144,7 +144,8 @@ def send_otp_view(request):
             logger.info(f'[OTP] Trying SendGrid HTTP API for {email} to bypass SMTP block')
             _try_send_sendgrid_http()
             logger.info(f'[OTP] Email sent successfully to {email} via HTTP API')
-            return Response({'message': f'Verification code sent to {email}. Check your inbox and spam folder.'})
+            logger.info(f'[OTP_CODE_REVEAL] 👉 The OTP code for {email} is: {otp_code} 👈')
+            return Response({'message': f'Verification code sent to {email}. Check your inbox and spam folder.', 'dev_otp': otp_code})
         except Exception as e:
             tb = traceback.format_exc()
             logger.warning(f'[OTP] SendGrid HTTP API failed for {email}: {e}\n{tb}')
