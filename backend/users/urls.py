@@ -26,5 +26,4 @@ urlpatterns = [
     path('toggle-class/',    views.toggle_class_view,    name='toggle-class'),
     path('platform-stats/',  views.platform_stats_view,  name='platform-stats'),
     path('health/', views.health_check, name='health_check'),
-    path('ping/',   views.ping_view,    name='ping'),
 ]
