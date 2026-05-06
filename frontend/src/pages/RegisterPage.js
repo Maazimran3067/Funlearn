@@ -247,7 +247,8 @@ export default function RegisterPage() {
 
   const sendCode = async () => {
     if (!email.trim()) { setErr('Enter your email.'); return; }
-    setLoad(true); setErr(''); setOk('');
+    setLoad(true); setErr('');
+    setOk('Sending code... This may take up to 60 seconds if the server is starting up. Please wait ⏳');
     try {
       await sendOTP({ email: email.trim().toLowerCase(), role: role.id });
       setOk(`Code sent to ${email}! Check inbox & spam.`);

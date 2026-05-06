@@ -1,6 +1,3 @@
-//this is api.js
-
-
 import axios from 'axios';
 
 const BASE_URL = 'https://funlearn-o3b9.onrender.com';
@@ -8,7 +5,7 @@ const BASE_URL = 'https://funlearn-o3b9.onrender.com';
 const api = axios.create({
   baseURL: BASE_URL,
   headers: { 'Content-Type': 'application/json' },
-  timeout: 35000,
+  timeout: 60000,
 });
 
 api.interceptors.request.use((config) => {
@@ -23,7 +20,7 @@ api.interceptors.response.use(
     if (error.code === 'ECONNABORTED') {
       error.response = {
         data: {
-          error: 'Server is waking up (Render cold start). Please wait 30 seconds and try again.'
+          error: 'Request timed out. The server may be waking up — please wait 30 seconds and try again.'
         }
       };
     } else if (!error.response) {
@@ -41,8 +38,8 @@ export const loginUser      = (data) => api.post('/api/users/login/', data);
 export const getProfile     = ()     => api.get('/api/users/profile/');
 export const updateProfile  = (data) => api.patch('/api/users/update-profile/', data);
 export const changePassword = (data) => api.post('/api/users/change-password/', data);
-export const sendOTP        = (data) => api.post('/api/users/send-otp/', data);
-export const verifyOTP      = (data) => api.post('/api/users/verify-otp/', data);
+export const sendOTP        = (data) => api.post('/api/users/send-otp/', data, { timeout: 90000 });
+export const verifyOTP      = (data) => api.post('/api/users/verify-otp/', data, { timeout: 60000 });
 
 // ── CLASSROOM ──────────────────────────────────────────────────
 export const checkClassCode    = (code) => api.get(`/api/users/check-class-code/?code=${code}`);
