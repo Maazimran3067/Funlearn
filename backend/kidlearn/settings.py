@@ -112,10 +112,12 @@ USE_I18N      = True
 USE_TZ        = True
 
 # ── Email for OTP ─────────────────────────────────────────────────
-EMAIL_BACKEND       = 'django.core.mail.backends.smtp.EmailBackend'
+# Custom backend forces IPv4 to fix [Errno 101] on Render free tier
+EMAIL_BACKEND       = 'users.email_backend.RobustSMTPEmailBackend'
 EMAIL_HOST          = 'smtp.gmail.com'
-EMAIL_PORT          = 587
-EMAIL_USE_TLS       = True
+EMAIL_PORT          = int(os.getenv('EMAIL_PORT', '587'))
+EMAIL_USE_TLS       = os.getenv('EMAIL_USE_TLS', 'True') == 'True'
+EMAIL_USE_SSL       = os.getenv('EMAIL_USE_SSL', 'False') == 'True'
 EMAIL_HOST_USER     = os.getenv('EMAIL_HOST_USER',     '')
 EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD', '')
 DEFAULT_FROM_EMAIL  = os.getenv('EMAIL_HOST_USER',     'noreply@funlearn.ai')

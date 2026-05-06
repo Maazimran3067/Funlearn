@@ -80,20 +80,60 @@ def send_otp_view(request):
         'created_at': datetime.utcnow(),
     })
 
-    try:
+    def _try_send(port, use_tls, use_ssl):
+        """Attempt to send OTP email on given port/protocol."""
+        from django.core.mail import get_connection
+        conn = get_connection(
+            backend='users.email_backend.RobustSMTPEmailBackend',
+            host=settings.EMAIL_HOST,
+            port=port,
+            username=settings.EMAIL_HOST_USER,
+            password=settings.EMAIL_HOST_PASSWORD,
+            use_tls=use_tls,
+            use_ssl=use_ssl,
+            timeout=25,
+            fail_silently=False,
+        )
         send_mail(
             subject        = 'FunLearn AI — Your Verification Code',
-            message        = f'Hello!\n\nYour FunLearn AI verification code is:\n\n{otp_code}\n\nThis code expires in 10 minutes.\nDo not share this code with anyone.\n\nFunLearn AI Team',
+            message        = (
+                f'Hello!\n\nYour FunLearn AI verification code is:\n\n'
+                f'  {otp_code}\n\n'
+                f'This code expires in 10 minutes.\n'
+                f'Do not share this code with anyone.\n\n'
+                f'— FunLearn AI Team'
+            ),
             from_email     = settings.EMAIL_HOST_USER,
             recipient_list = [email],
             fail_silently  = False,
+            connection     = conn,
         )
-        return Response({'message': f'Verification code sent to {email}. Check your inbox and spam folder.'})
-    except Exception as e:
-        tb = traceback.format_exc()
-        logger.error(f'OTP email failed for {email}: {str(e)}\n{tb}')
-        logger.error(f'EMAIL_HOST_USER configured: {bool(settings.EMAIL_HOST_USER)}, EMAIL_HOST_PASSWORD configured: {bool(settings.EMAIL_HOST_PASSWORD)}')
-        return Response({'error': f'Could not send email: {str(e)}'}, status=500)
+
+    attempts = [
+        (587, True,  False),   # Port 587 STARTTLS  (primary)
+        (465, False, True),    # Port 465 SSL       (fallback 1)
+        (2525, True, False),   # Port 2525 STARTTLS (fallback 2, works on some clouds)
+    ]
+
+    last_error = None
+    for port, use_tls, use_ssl in attempts:
+        try:
+            logger.info(f'[OTP] Trying port {port} for {email}')
+            _try_send(port, use_tls, use_ssl)
+            logger.info(f'[OTP] Email sent successfully to {email} via port {port}')
+            return Response({'message': f'Verification code sent to {email}. Check your inbox and spam folder.'})
+        except Exception as e:
+            tb = traceback.format_exc()
+            logger.warning(f'[OTP] Port {port} failed for {email}: {e}\n{tb}')
+            last_error = e
+
+    # All ports failed
+    logger.error(f'[OTP] All SMTP ports failed for {email}. Last error: {last_error}')
+    logger.error(f'EMAIL_HOST_USER set: {bool(settings.EMAIL_HOST_USER)}, PASSWORD set: {bool(settings.EMAIL_HOST_PASSWORD)}')
+    return Response(
+        {'error': 'Could not send verification email. The email server is temporarily unreachable. Please try again in a few minutes.'},
+        status=500
+    )
 
 
 @api_view(['POST'])
