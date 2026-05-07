@@ -79,6 +79,20 @@ def create_teacher_profile(user, school_name):
         'created_at':  datetime.datetime.utcnow(),
     }
     db.teacher_profiles.insert_one(profile)
+
+    # Automatically create the corresponding class in the classes collection
+    new_class = {
+        'class_name': f"{user.first_name or 'Teacher'}'s Class",
+        'class_code': class_code,
+        'teacher_id': str(user.id),
+        'teacher_name': f"{user.first_name} {user.last_name}".strip() or user.username,
+        'student_ids': [],
+        'student_count': 0,
+        'created_at': datetime.datetime.utcnow(),
+        'active': True,
+    }
+    db.classes.insert_one(new_class)
+    
     return profile
 
 
