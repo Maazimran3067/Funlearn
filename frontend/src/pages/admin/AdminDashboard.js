@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../../context/AuthContext';
+import { useNavigate } from 'react-router-dom';
 import AdminNavbar from '../../components/AdminNavbar';
 import {
   AreaChart, Area, BarChart, Bar, LineChart, Line,
@@ -228,6 +229,7 @@ const GamesActivityChart = () => {
 // ── MAIN COMPONENT ────────────────────────────────────────────
 export default function AdminDashboard() {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [stats,      setStats]      = useState(null);
   const [users,      setUsers]      = useState([]);
   const [games,      setGames]      = useState([]);
@@ -239,12 +241,12 @@ export default function AdminDashboard() {
   const [filterRole, setFilterRole] = useState('all');
 
   useEffect(() => {
-    Promise.all([getPlatformStats(), getAllUsers(), getAllGamesAdmin(), getAllClasses()])
+    Promise.allSettled([getPlatformStats(), getAllUsers(), getAllGamesAdmin(), getAllClasses()])
       .then(([sR, uR, gR, cR]) => {
-        setStats(sR.data);
-        setUsers(uR.data.users || []);
-        setGames(gR.data.games || []);
-        setClasses(cR.data.classes || []);
+        if (sR.status === 'fulfilled') setStats(sR.value.data);
+        if (uR.status === 'fulfilled') setUsers(uR.value.data.users || []);
+        if (gR.status === 'fulfilled') setGames(gR.value.data.games || []);
+        if (cR.status === 'fulfilled') setClasses(cR.value.data.classes || []);
       })
       .finally(() => setLoading(false));
   }, []);
@@ -345,17 +347,23 @@ export default function AdminDashboard() {
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(160px,1fr))',
           gap: 14, marginBottom: 24 }}>
           <StatCard emoji="🏫" value={stats?.total_schools || classes.length}
-            label="Total Schools" color="#6366F1" sub="↑ 2 new this month" />
+            label="Total Schools" color="#6366F1" sub="Click to view"
+            onClick={() => navigate('/admin/classes')} />
           <StatCard emoji="👥" value={stats?.total_students || studentCount}
-            label="Total Students" color="#10B981" sub="Active learners" />
+            label="Total Students" color="#10B981" sub="Click to view"
+            onClick={() => { setTab('users'); setFilterRole('student'); }} />
           <StatCard emoji="👩‍🏫" value={stats?.total_teachers || teacherCount}
-            label="Total Teachers" color="#F59E0B" sub="All trained" />
+            label="Total Teachers" color="#F59E0B" sub="Click to view"
+            onClick={() => { setTab('users'); setFilterRole('teacher'); }} />
           <StatCard emoji="🎮" value={stats?.games_today || 0}
-            label="Games Today" color="#EF4444" sub="↑ +12% growth" />
+            label="Games Today" color="#EF4444" sub="↑ +12% growth"
+            onClick={() => navigate('/admin/games')} />
           <StatCard emoji="🏆" value={stats?.total_badges || 0}
-            label="Total Badges" color="#A855F7" />
+            label="Total Badges" color="#A855F7"
+            onClick={() => { setTab('users'); setFilterRole('all'); }} />
           <StatCard emoji="✅" value={stats?.active_users || 0}
-            label="Active Users" color="#10B981" />
+            label="Active Users" color="#10B981"
+            onClick={() => navigate('/admin/users')} />
         </div>
 
         {/* ── SYSTEM HEALTH ── */}

@@ -38,11 +38,22 @@ import MemoryGame         from './pages/games/MemoryFlip';
 import LogicGridGame      from './pages/games/LogicGridGame';
 import SpeedEquationsGame from './pages/games/SpeedEquationsGame';
 
+// ── Admin sub-pages (were MISSING from routing — caused navbar to redirect to /login) ──
+import AdminUsers   from './pages/admin/AdminUsers';
+import AdminClasses from './pages/admin/AdminClasses';
+import AdminGames   from './pages/admin/AdminGames';
+import AdminProfile from './pages/admin/AdminProfile';
+
+// ── Teacher/Parent sub-pages ──
+import TeacherProfile from './pages/teacher/TeacherProfile';
+import TeacherClass   from './pages/teacher/TeacherClass';
+import ParentProfile  from './pages/parent/ParentProfile';
+
 // ── ROUTE GUARDS ──────────────────────────────────────────────────
 function PrivateRoute({ children, role }) {
   const { user, loading } = useAuth();
   if (loading) return (
-    <div className="loading-screen" style={{ 
+    <div style={{ 
       minHeight: '100vh', background: '#0B1120', display: 'flex', 
       flexDirection: 'column', alignItems: 'center', justifyContent: 'center' 
     }}>
@@ -58,7 +69,7 @@ function PrivateRoute({ children, role }) {
 function PublicRoute({ children }) {
   const { user, loading } = useAuth();
   if (loading) return (
-    <div className="loading-screen" style={{ 
+    <div style={{ 
       minHeight: '100vh', background: '#0B1120', display: 'flex', 
       flexDirection: 'column', alignItems: 'center', justifyContent: 'center' 
     }}>
@@ -85,31 +96,32 @@ export default function App() {
       <Router>
         <Routes>
 
-          {/* Public */}
-          <Route path="/"        element={<HomePage />} />
-          <Route path="/home"    element={<HomePage />} />
-          <Route path="/login"   element={<PublicRoute><LoginPage /></PublicRoute>} />
+          {/* ── Public ── */}
+          <Route path="/"         element={<HomePage />} />
+          <Route path="/home"     element={<HomePage />} />
+          <Route path="/login"    element={<PublicRoute><LoginPage /></PublicRoute>} />
           <Route path="/register" element={<PublicRoute><RegisterPage /></PublicRoute>} />
 
           {/* ── Student ── */}
-          <Route path="/student/dashboard" element={
-            <PrivateRoute role="student"><StudentDashboard /></PrivateRoute>} />
-          <Route path="/student/profile" element={
-            <PrivateRoute role="student"><StudentProfile /></PrivateRoute>} />
-          <Route path="/student/progress" element={
-            <PrivateRoute role="student"><StudentProgress /></PrivateRoute>} />
+          <Route path="/student/dashboard" element={<PrivateRoute role="student"><StudentDashboard /></PrivateRoute>} />
+          <Route path="/student/profile"   element={<PrivateRoute role="student"><StudentProfile /></PrivateRoute>} />
+          <Route path="/student/progress"  element={<PrivateRoute role="student"><StudentProgress /></PrivateRoute>} />
 
           {/* ── Teacher ── */}
-          <Route path="/teacher/dashboard" element={
-            <PrivateRoute role="teacher"><TeacherDashboard /></PrivateRoute>} />
+          <Route path="/teacher/dashboard"     element={<PrivateRoute role="teacher"><TeacherDashboard /></PrivateRoute>} />
+          <Route path="/teacher/profile"       element={<PrivateRoute role="teacher"><TeacherProfile /></PrivateRoute>} />
+          <Route path="/teacher/class/:code"   element={<PrivateRoute role="teacher"><TeacherClass /></PrivateRoute>} />
 
           {/* ── Parent ── */}
-          <Route path="/parent/dashboard" element={
-            <PrivateRoute role="parent"><ParentDashboard /></PrivateRoute>} />
+          <Route path="/parent/dashboard" element={<PrivateRoute role="parent"><ParentDashboard /></PrivateRoute>} />
+          <Route path="/parent/profile"   element={<PrivateRoute role="parent"><ParentProfile /></PrivateRoute>} />
 
-          {/* ── Admin ── */}
-          <Route path="/admin/dashboard" element={
-            <PrivateRoute role="admin"><AdminDashboard /></PrivateRoute>} />
+          {/* ── Admin — all 4 sub-pages now routed ── */}
+          <Route path="/admin/dashboard" element={<PrivateRoute role="admin"><AdminDashboard /></PrivateRoute>} />
+          <Route path="/admin/users"     element={<PrivateRoute role="admin"><AdminUsers /></PrivateRoute>} />
+          <Route path="/admin/classes"   element={<PrivateRoute role="admin"><AdminClasses /></PrivateRoute>} />
+          <Route path="/admin/games"     element={<PrivateRoute role="admin"><AdminGames /></PrivateRoute>} />
+          <Route path="/admin/profile"   element={<PrivateRoute role="admin"><AdminProfile /></PrivateRoute>} />
 
           {/* ── Age 3-6 Games ── */}
           <Route path="/games/colors"       element={<PrivateRoute><ColorsGame /></PrivateRoute>} />
@@ -132,7 +144,7 @@ export default function App() {
           <Route path="/games/logicgrid" element={<PrivateRoute><LogicGridGame /></PrivateRoute>} />
           <Route path="/games/speedeq"   element={<PrivateRoute><SpeedEquationsGame /></PrivateRoute>} />
 
-          {/* Fallback */}
+          {/* ── Fallback ── */}
           <Route path="*" element={<Navigate to="/login" replace />} />
 
         </Routes>
