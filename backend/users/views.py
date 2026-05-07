@@ -434,12 +434,17 @@ def student_detail_view(request):
         game_avgs.setdefault(gid, []).append(s['percentage'])
     game_averages = {g: round(sum(v)/len(v)) for g, v in game_avgs.items()}
     overall_avg   = round(sum(s['percentage'] for s in scores)/len(scores)) if scores else 0
+    game_performance = [
+        {'game_id': g, 'game_name': g.capitalize(), 'avg_score': avg}
+        for g, avg in game_averages.items()
+    ]
     for key, val in list(profile.items()):
         if hasattr(val, 'isoformat'): profile[key] = val.isoformat()
     return Response({
         'user_id': student_id, 'first_name': u.first_name, 'last_name': u.last_name,
         'profile': profile, 'total_games': len(scores), 'overall_avg': overall_avg,
-        'game_averages': game_averages, 'recent_scores': scores[:10], 'badges': badges, 'scores': scores,
+        'game_averages': game_averages, 'game_performance': game_performance,
+        'recent_scores': scores[:10], 'badges': badges, 'scores': scores,
     })
 
 
@@ -478,6 +483,73 @@ def my_children_view(request):
         except User.DoesNotExist:
             pass
     return Response({'children': children})
+
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def add_child_view(request):
+    if request.user.role != 'parent':
+        return Response({'error': 'Parents only.'}, status=400)
+    child_username = request.data.get('child_username', '').strip()
+    if not child_username:
+        return Response({'error': 'child_username is required.'}, status=400)
+    try:
+        child = User.objects.get(username__iexact=child_username, role='student')
+    except User.DoesNotExist:
+        return Response({'error': 'Student not found. Make sure the child is registered as a student.'}, status=404)
+    db = get_db()
+    db.parent_profiles.update_one(
+        {'user_id': str(request.user.id)},
+        {'$addToSet': {'children': child.username}}
+    )
+    return Response({'message': f'Child {child.username} added successfully!'})
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def child_progress_view(request):
+    """Get a single child's progress by username — for parent dashboard."""
+    username = request.query_params.get('username', '').strip()
+    if not username:
+        return Response({'error': 'username required.'}, status=400)
+    db = get_db()
+    try:
+        child = User.objects.get(username__iexact=username, role='student')
+    except User.DoesNotExist:
+        return Response({'error': 'Student not found.'}, status=404)
+    sid     = str(child.id)
+    profile = db.student_profiles.find_one({'user_id': sid}, {'_id': 0}) or {}
+    scores  = list(db.game_scores.find({'student_id': sid}, {'_id': 0}).sort('played_at', -1).limit(50))
+    badges  = list(db.badges.find({'student_id': sid}, {'_id': 0}))
+    for s in scores:
+        s['percentage'] = min(100, s.get('percentage', 0))
+        if 'played_at' in s and hasattr(s['played_at'], 'isoformat'):
+            s['played_at'] = s['played_at'].isoformat()
+    game_avgs = {}
+    for s in scores:
+        gid = s.get('game_id', '')
+        game_avgs.setdefault(gid, []).append(s['percentage'])
+    game_averages = {g: round(sum(v)/len(v)) for g, v in game_avgs.items()}
+    game_performance = [
+        {'game_id': g, 'game_name': g.capitalize(), 'avg_score': avg}
+        for g, avg in game_averages.items()
+    ]
+    age = profile.get('age_group', '6-9')
+    profile['age_group'] = {'3-5': '3-6', '6-8': '6-9'}.get(age, age)
+    for key, val in list(profile.items()):
+        if hasattr(val, 'isoformat'): profile[key] = val.isoformat()
+    return Response({
+        'user_id': sid,
+        'first_name': child.first_name,
+        'last_name': child.last_name,
+        'username': child.username,
+        'profile': profile,
+        'recent_scores': scores[:10],
+        'scores': scores,
+        'badges': badges,
+        'game_performance': game_performance,
+        'game_averages': game_averages,
+    })
 
 
 @api_view(['GET'])

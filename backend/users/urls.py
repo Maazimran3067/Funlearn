@@ -19,6 +19,8 @@ urlpatterns = [
     path('student-detail/',                  views.student_detail_view,   name='student-detail'),
 
     path('my-children/',     views.my_children_view,     name='my-children'),
+    path('add-child/',       views.add_child_view,       name='add-child'),
+    path('child-progress/',  views.child_progress_view,  name='child-progress'),
 
     path('all-users/',       views.all_users_view,       name='all-users'),
     path('all-classes/',     views.all_classes_view,     name='all-classes'),

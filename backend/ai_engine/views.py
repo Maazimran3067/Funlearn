@@ -369,9 +369,19 @@ def progress_report_view(request):
     Analyzes trends, strengths, weaknesses from MongoDB data.
     This is the Learning Analytics AI technique.
     """
-    student_id = request.query_params.get(
-        'student_id', str(request.user.id)
-    )
+    # Support lookup by username (for parent dashboard) or student_id
+    username   = request.query_params.get('username', '').strip()
+    student_id = request.query_params.get('student_id', '').strip()
+    if username:
+        from django.contrib.auth import get_user_model
+        Usr = get_user_model()
+        try:
+            child = Usr.objects.get(username__iexact=username, role='student')
+            student_id = str(child.id)
+        except Usr.DoesNotExist:
+            return Response({'report': 'Student not found.', 'game_averages': {}})
+    if not student_id:
+        student_id = str(request.user.id)
     db      = get_db()
     profile = db.student_profiles.find_one(
         {'user_id': student_id}, {'_id': 0}

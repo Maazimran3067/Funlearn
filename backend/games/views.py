@@ -120,7 +120,24 @@ def active_today_view(request):
         {'student_id': {'$in': student_ids}, 'played_at': {'$gte': today}}
     )
 
+    # Build student objects with names for the teacher to display
+    from django.contrib.auth import get_user_model
+    User = get_user_model()
+    active_students = []
+    for sid in active_ids:
+        try:
+            u = User.objects.get(id=int(sid))
+            active_students.append({
+                'user_id': sid,
+                'first_name': u.first_name,
+                'last_name': u.last_name,
+                'username': u.username,
+            })
+        except (User.DoesNotExist, ValueError):
+            active_students.append({'user_id': sid, 'first_name': sid, 'last_name': ''})
+
     return Response({
         'active_today':       len(active_ids),
         'active_student_ids': list(active_ids),
+        'active_students':    active_students,
     })

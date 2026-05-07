@@ -269,7 +269,7 @@ export default function TeacherDashboard() {
     try {
       const { createTeacherClass } = await import('../../services/api');
       const r = await createTeacherClass({ class_name: newClassName.trim() });
-      const newCls = r.data;
+      const newCls = r.data.class || r.data;   // backend returns {message, class: {...}}
       setClasses(p => [...p, newCls]);
       setNewClassName('');
       setCreateMsg(`✅ Class created! Code: ${newCls.class_code}`);

@@ -251,8 +251,8 @@ export default function AdminDashboard() {
 
   const handleToggleUser = async (userId, current) => {
     try {
-      await toggleUser({ user_id: userId, is_active: !current });
-      setUsers(p => p.map(u => u.user_id === userId ? { ...u, is_active: !current } : u));
+      await toggleUser({ user_id: userId, active: !current });
+      setUsers(p => p.map(u => u.id === userId ? { ...u, is_active: !current } : u));
     } catch {}
   };
 
@@ -527,7 +527,7 @@ export default function AdminDashboard() {
                     {u.role}
                   </div>
                   <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
-                    onClick={() => handleToggleUser(u.user_id, u.is_active)}
+                    onClick={() => handleToggleUser(u.id, u.is_active)}
                     style={{
                       padding: '5px 14px', borderRadius: 20, cursor: 'pointer',
                       background: u.is_active !== false
