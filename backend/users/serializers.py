@@ -166,7 +166,8 @@ class ParentRegisterSerializer(serializers.Serializer):
         return validate_password_strength(value)
 
     def validate_child_username(self, value):
-        if not User.objects.filter(username__iexact=value, role='student').exists():
+        child = User.objects.filter(username__iexact=value).first()
+        if not child or child.role != 'student':
             raise serializers.ValidationError(
                 'Child username not found. Make sure your child registered first as a student.'
             )

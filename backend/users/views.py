@@ -494,7 +494,9 @@ def add_child_view(request):
     if not child_username:
         return Response({'error': 'child_username is required.'}, status=400)
     try:
-        child = User.objects.get(username__iexact=child_username, role='student')
+        child = User.objects.filter(username__iexact=child_username).first()
+        if not child or child.role != 'student':
+            raise User.DoesNotExist
     except User.DoesNotExist:
         return Response({'error': 'Student not found. Make sure the child is registered as a student.'}, status=404)
     db = get_db()
@@ -514,7 +516,9 @@ def child_progress_view(request):
         return Response({'error': 'username required.'}, status=400)
     db = get_db()
     try:
-        child = User.objects.get(username__iexact=username, role='student')
+        child = User.objects.filter(username__iexact=username).first()
+        if not child or child.role != 'student':
+            raise User.DoesNotExist
     except User.DoesNotExist:
         return Response({'error': 'Student not found.'}, status=404)
     sid     = str(child.id)

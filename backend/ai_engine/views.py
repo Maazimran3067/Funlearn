@@ -376,7 +376,9 @@ def progress_report_view(request):
         from django.contrib.auth import get_user_model
         Usr = get_user_model()
         try:
-            child = Usr.objects.get(username__iexact=username, role='student')
+            child = Usr.objects.filter(username__iexact=username).first()
+            if not child or child.role != 'student':
+                raise Usr.DoesNotExist
             student_id = str(child.id)
         except Usr.DoesNotExist:
             return Response({'report': 'Student not found.', 'game_averages': {}})
